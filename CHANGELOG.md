@@ -7,6 +7,8 @@ here. Unreleased work is not a published version.
 
 ### Added
 
+- Agent-specific installation and activation instructions, with a manual
+  file-copy route and an optional shared installer.
 - Agent-independent capability guidance and portability acceptance scenarios,
   including conversation-only and read-only delivery.
 - MIT license and distribution guidance.

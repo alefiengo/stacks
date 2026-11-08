@@ -53,13 +53,11 @@ Do not create per-agent wrapper files inside the audited project or copy this
 repository's maintainer AGENTS.md into that project as part of skill execution.
 Repository maintenance instructions are separate from the portable runtime.
 
-## Compatibility evidence
+## Shared workflow
 
-Portable design does not establish that every host has been tested. Record
-actual host/revision, installation method, capabilities, request, and outcome
-for each integration trial. Limit compatibility claims to the evidence gathered;
-a missing host capability can reduce what was verified or saved without
-changing the core decision process.
+Each host uses the same entry point, references, and templates. Native skill
+loading and explicit context loading both use this capability contract; a
+missing capability changes delivery or verification, not the stack decision
+process. Keep resource loading separate from the target project's inputs.
 
-See the [core workflow](../SKILL.md) for scope and authorization rules and the
-[validation guide](../validation/README.md) for portability scenarios.
+See the [core workflow](../SKILL.md) for scope and authorization rules.

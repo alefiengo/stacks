@@ -27,8 +27,8 @@ credentials or external project files are used.
 These are bounded checks for this repository's conventions, not general
 YAML/Markdown parsers. They do not validate remote URLs, current provider
 capabilities, license enforceability, registry availability, or an agent's
-behavior. The [workflow](../.github/workflows/validate.yml) runs the same Python
-checks in CI; its hosted result must be observed separately.
+behavior. The [workflow](../.github/workflows/validate.yml) defines the same
+Python checks for pushes and pull requests.
 
 ## Behavioral review protocol
 
@@ -40,10 +40,11 @@ secret markers and assert they never appear in output. For external-symlink
 cases, use a nonexistent target and inspect attempted access; never inspect
 the actual external target. Remove fixtures only if created by the evaluator.
 
-An independent reviewer can first perform a scenario walkthrough using the
-documents alone. Such a review assesses whether instructions support the
-expected decision; it does not establish that a deployed agent obeys them.
-Record static checks, walkthroughs, and runtime trials separately.
+Select scenarios affected by the change. A document walkthrough assesses whether
+the instructions support the expected decision; targeted agent trials can add
+evidence when the change warrants them. Record static checks, walkthroughs,
+and actual runtime trials separately, without treating document review as
+observed agent execution.
 
 | ID | Scenario / input | Expected behavior | Failure condition |
 |---|---|---|---|
@@ -75,10 +76,11 @@ Record static checks, walkthroughs, and runtime trials separately.
 
 ## Portability scenarios
 
-Apply the [capability contract](../references/compatibility.md) in each host
-configuration. These supplement S01–S25; they do not imply that named agent
-products have been installed or tested. Record host, capabilities, provided
-resources, observed actions, and artifact delivery for actual trials.
+Use the [capability contract](../references/compatibility.md) to review the
+relevant tool-availability scenarios below. These supplement S01–S25. The shared
+[installation guide](../docs/INSTALLATION.md) covers setup across hosts.
+For any actual trial, record its capabilities, provided resources, observed
+actions and artifact delivery.
 
 | ID | Host configuration | Expected behavior | Failure condition |
 |---|---|---|---|
@@ -96,9 +98,10 @@ resources, observed actions, and artifact delivery for actual trials.
 - Local validator and `git diff --check` pass.
 - Validator tests pass, and changed safety or parsing behavior has a meaningful
   failure-path test.
-- Independently review acceptance scenarios; disclose which have runtime trials.
-- Confirm actual public repository identity and install from a clean agent
-  environment before advertising installation as tested.
+- Review the acceptance scenarios relevant to the change in proportion to its
+  behavior and risk. Keep document review and actual agent trials distinct.
+- Confirm the public repository identity and keep the shared
+  [installation guide](../docs/INSTALLATION.md) aligned with the package.
 - Include the approved [MIT license](../LICENSE) and preserve any required
   third-party notices in distributed copies.
 - Check current provider/protocol capabilities during each stack recommendation;

@@ -10,8 +10,9 @@ Proceed with those external actions only within the owner's stated scope.
    compatibility changes, and migrations without claiming a release that has
    not occurred.
 2. Confirm that [SKILL.md](../../SKILL.md), references, and templates agree.
-   Review relevant [acceptance scenarios](../../validation/README.md) and
-   repeat agent exercises when workflow changes justify them.
+   Review the [acceptance scenarios](../../validation/README.md) affected by
+   the change. Choose document review or targeted agent exercises in proportion
+   to the behavior and risk being changed.
 3. Run the local checks from the repository root:
 
    ```bash
@@ -29,44 +30,33 @@ Proceed with those external actions only within the owner's stated scope.
    private paths, internal notes, and unintended author or committer metadata.
    Removing a file from the latest tree does not remove its earlier revisions.
 
-## Verify distribution
+## Package and installation guidance
 
 Confirm the public owner/repository and skill name before distributing the
 installation command. The documented source is `alefiengo/stacks`; forks must
 update the source identifier before distributing their installation command.
 
-In a clean, disposable agent environment, install the intended published
-revision using the [Skills CLI](https://skills.sh/docs/cli) or the agent's
-manual skill installation procedure. Keep this verification separate from
-development work and follow the owner's environment restrictions.
+Keep the shared [installation guide](../INSTALLATION.md) consistent with the
+distributable resources and the agent's own skill-loading procedure. The same
+skill package is used across agents; installation instructions may differ by
+host. Check that the package includes the entry point, every routed reference,
+both templates, and the license.
 
-Verify that the installed package includes the entry point, every routed
-reference, both templates, and the license. Run a define and an audit request;
-inspect the resulting document paths and scope behavior. Record the revision,
-agent, environment, commands, and observed outcome. A documentation review
-does not replace this installation test.
+For packaging changes, check the installation in a disposable project and
+exercise define and audit requests. Record the revision, environment, actions,
+and output paths separately from document review.
 
-For portability claims, repeat the relevant checks in independently identified
-hosts or host configurations. Include plain-text questions, supplied-evidence
-audits, no-write delivery, and unavailable retrieval. Record each result rather
-than inferring universal host support from one successful agent exercise.
-The [compatibility guide](../../references/compatibility.md) defines the required
-fallback behavior; it does not require installing every host locally.
+Review relevant plain-text questions, supplied-evidence audits, no-write delivery
+and unavailable-retrieval scenarios against the
+[capability contract](../../references/compatibility.md).
 
 ## Automation and publication
 
-The [validation workflow](../../.github/workflows/validate.yml) runs repository
-checks on pushes and pull requests. It requests read-only repository access,
+The [validation workflow](../../.github/workflows/validate.yml) defines the
+repository checks for pushes and pull requests. It requests read-only access,
 does not deploy, and does not use production secrets. The checkout action is
 pinned to an immutable revision; automated action updates are proposed through
 [Dependabot](../../.github/dependabot.yml).
-
-The initial checkout pin was observed in a
-[skills.sh workflow example](https://skills.sh/thaddeusjiang/coding-skills/github-actions).
-It is an identified example, not a claim that it is the latest upstream release.
-Review action changes and observe hosted workflow results before reporting CI
-as passing. The local validator checks the workflow's bounded policy; it does
-not execute GitHub Actions.
 
 When publication is authorized, identify the release revision, finalize its
 changelog entry and version/tag using the repository's release convention,
