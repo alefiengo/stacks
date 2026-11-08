@@ -1,93 +1,137 @@
-# Deployment, Containers & CI/CD
+# Deployment, containers, and CI/CD
 
-Cross-cutting guidance for layers L8–L10 and the microservices profile.
-The Docker-first rule from SKILL.md applies throughout.
+Use this guide for layers L8–L10 and distributed systems. Choose delivery and
+operations around the workload, user constraints, and team ownership. Apply
+the [release verification policy](decision-criteria.md)
+and [security guidance](security.md) to the selected platform.
 
-## Docker-first rule (binding)
+Jump to: [Local environment](#deployment-model-and-local-environment-l8) ·
+[Containers](#application-container-patterns) · [CI/CD](#cicd-l9) ·
+[Cloud Run](#google-cloud-run) · [Microservices](#distributed-systems-and-microservices) ·
+[Infrastructure](#infrastructure-and-environments-l10)
 
-- Any **service component** — database, cache, queue, broker, search — runs
-  via Docker/compose locally or a managed cloud service in production.
-  Never propose native or host installs for them.
-- The **application itself** ships as an OCI container for any non-trivial
-  deployment (Cloud Run, VMs, K8s). Dev tooling (compilers, package
-  managers, CLIs) may be native.
+## Deployment model and local environment (L8)
 
-## Local environment (L8)
-
-- `docker-compose.yaml` with the service catalog + healthchecks; app runs
-  natively for a fast loop or inside compose for parity — document both.
-- **Service catalog defaults** (pin `major.minor`, verify current versions
-  at generation time): PostgreSQL, Redis, RabbitMQ (when needed), Redpanda
-  or Kafka (only at real scale), MinIO (S3-compatible blobs), Mailpit
-  (email catching).
-- `.env.example` committed; real secrets never.
+- Default to Docker Compose for local database, cache, queue, broker, and search
+  services. If containers are unavailable or prohibited, document a managed
+  development service or another suitable alternative, including parity limits.
+  Embedded libraries and databases do not automatically need separate services.
+- Prefer managed production dependencies or explicitly operated OCI services.
+  Document operational ownership, persistent storage, backups, restore, network
+  access, upgrades, and availability; a container alone does not supply them.
+- OCI application containers are a starting point for backend services when
+  supported. Static frontends on a CDN, function runtimes, client-launched
+  stdio programs, and platform-specific packaging can use other delivery models.
+  Developer compilers, package managers, and CLIs can run natively.
+- Document the minimal local service catalog with readiness checks. Add a
+  database, cache, broker, or object store only when a requirement calls for it.
+- Local object storage must match the API under test. S3-compatible storage is
+  not proof of GCS compatibility; record emulator and adapter limitations.
+- Commit an example configuration containing placeholders only; keep real
+  secrets out of the repository and generated documents. An application may
+  run natively for development or in Compose according to team constraints.
 
 ## Application container patterns
 
-- Multi-stage builds; dependency layers cached before code is copied.
-- Python: slim base + uv; non-root user.
-- Node: slim base + pnpm fetch stage; single-bundle artifacts reduce image
-  size and cold starts.
-- Java: multi-stage with layered jars (Spring Boot) and a JRE-only runtime
-  stage; jlink optional for smaller images.
-- Pin base images to `major.minor`; never `:latest`; rebuild images
-  regularly for base-image CVEs (noted in CI).
+- Use multi-stage builds, cache dependency layers, and keep build-only tools out of
+  runtime images. Use a minimal supported base, a non-root user where possible,
+  and an explicit policy for writable filesystem paths.
+- Match packaging to the application: Python wheels and runtime dependencies,
+  Node.js assets, native modules, and framework loaders, or Java packaging and
+  runtime requirements. A single bundle or JRE-only image is conditional.
+- Mutable tags identify a release channel, not immutable content. For released
+  images record an exact version and digest; deploy the same built artifact
+  across environments. Schedule updates and rebuilds, then scan the result.
+  Do not use `:latest` as a reproducibility policy.
+- Verify image architecture, runtime support, port and listening interface,
+  startup time, health protocol, resource limits, and graceful shutdown.
 
-## CI/CD (L9 — GitHub Actions default)
+## CI/CD (L9)
 
-Pipeline shape, PR and main:
+Use the existing host and CI platform where suitable. GitHub Actions is a
+starting choice for a new GitHub repository. Separate validation from deployment:
 
-1. Setup (cache: uv, pnpm store, Gradle).
-2. Lint + format check.
-3. Type check (pyright/tsc where applicable).
-4. Tests — unit; integration via Testcontainers or service containers.
-5. Build/package.
-6. Container build + vulnerability scan (trivy).
-7. Deploy to environments; **manual approval gate for production**.
+1. **Pull requests:** resolve dependencies from locks or equivalent constraints,
+   then run applicable lint, format, type, test, and build checks.
+   Run integration services only in isolated approved environments. Apply
+   dependency review, secret scanning, and container scanning when relevant.
+2. **Untrusted contributions:** no production secrets, write credentials, or
+   deployment. Do not execute untrusted code in privileged workflows. Scope
+   token permissions, caches, and artifact access to their trust boundary.
+3. **Protected release branch or tag:** build and scan a releasable artifact;
+   record provenance and digest, then promote that artifact through environments.
+   Verify third-party actions and plugins, pin immutable revisions when supported,
+   and maintain an update policy.
+4. **Deployment:** use narrowly scoped workload identity or OIDC federation
+   where available. Restrict permitted repositories, refs, and environments;
+   grant least privilege and avoid long-lived cloud keys. Follow the production
+   approval policy; propose a manual gate when none is established.
 
-Additional gates: secret scanning (gitleaks), dependency review on PRs,
-automated dependency updates (Renovate default; Dependabot acceptable),
-branch protection on main.
+Recommend automated dependency updates and branch protection according to the
+host and team. Select remediation thresholds for scanner findings; record
+exceptions with scope, owner, and expiry. A recommended gate is not evidence
+that it already runs.
 
-## Google Cloud Run (primary managed target)
+## Google Cloud Run
 
-- **Deploy from CI via Workload Identity Federation** — no exported service
-  account keys, ever.
-- Region close to users; `--min-instances 0` (cost) vs `1` (cold-start
-  latency); concurrency default 80 (tune for CPU-bound work).
-- Startup + liveness probes against the HTTP health endpoint; **graceful
-  SIGTERM handling is mandatory**.
-- Secrets: GCP Secret Manager mounted as environment variables.
-- Service accounts: one per service, least privilege; internal service-to-
-  service calls use Google-signed ID tokens + IAM invoker bindings, private
-  ingress.
-- **gRPC services:** enable HTTP/2; container must listen with h2c.
-- **Remote MCP servers:** Streamable HTTP transport; put OIDC/IAP auth in
-  front.
-- VPC Connector only when private resources must be reached.
-- Custom domain + managed TLS via domain mapping or a load balancer.
+When Cloud Run is selected, verify its current runtime contract and the
+capabilities of the selected service, job, or worker model using permitted
+official sources. Keep unavailable or disallowed lookups pending verification.
 
-## Microservices guidance
+- Distinguish request-serving HTTP/gRPC services from batch jobs, scheduled
+  work, and persistent workers. Verify CPU allocation, execution duration,
+  retry semantics, shutdown, and scaling; do not assume work after an HTTP
+  response is durable. Queues require idempotent consumers and failure handling.
+- Choose region, minimum and maximum instances, concurrency, CPU, memory, and
+  database connection budgets from latency, cost, availability, and workload.
+  Do not prescribe a universal numeric concurrency or instance default.
+- Verify the required port, listening interface, and transport. HTTP, gRPC, TCP,
+  and stdio have different health and lifecycle requirements; use supported probes and avoid
+  dependencies that cause cascading liveness restarts.
+- For gRPC, verify end-to-end HTTP/2 and cleartext container-side requirements,
+  streaming limits, client reconnect behavior, and ingress configuration.
+- For remote MCP, verify SDK and protocol authorization and discovery,
+  supported clients, streaming, reconnects, session routing and state, and scaling.
+  An OIDC or IAP proxy, or an ordinary browser login, does not by itself establish
+  protocol compatibility. Local stdio servers use a process lifecycle instead.
+- Use least-privilege identities and authenticate service-to-service calls;
+  verify token audience and caller permissions. Network ingress restrictions
+  supplement authentication and authorization rather than replacing them.
+- Choose supported private connectivity for actual dependencies. Verify current
+  direct networking and connector options, routing, quotas, cost, and egress
+  policy; do not assume a connector is always needed.
+- Choose secret injection through environment variables or mounted files as
+  separate mechanisms; verify version selection, access controls, and rotation.
+- Verify domains, TLS, load balancing, authentication, and rate limiting
+  as a complete routing design. Record applicable regional/product constraints.
 
-- **Default: modular monolith.** When a small team asks for microservices,
-  say this explicitly and ask what pain they expect splitting to solve
-  (org coordination, independent deploys, blast radius). Split when those
-  pressures are real, not aspirational.
-- When split: one bounded context per service; contracts (protobuf /
-  OpenAPI) versioned as artifacts; no shared domain models across services.
-- Repo strategy: monorepo for small teams (shared tooling, atomic changes);
-  repo-per-service when org boundaries demand independent ownership.
-- Integration: prefer events (Pub/Sub on GCP) over sync call chains; avoid
-  building a distributed monolith.
-- Platform: multiple Cloud Run services + an API gateway/LB covers most
-  needs; GKE only when orchestration needs genuinely outgrow managed
-  (stateful add-ons, custom operators, large fleets).
+## Distributed systems and microservices
 
-## IaC & environments (L10)
+- Start with a modular monolith when independent scaling, ownership, releases,
+  or isolation do not justify distributed operations. If microservices are a
+  firm requirement, honor it and document boundaries and operational costs.
+- When split, define service-owned data and bounded contexts; version contracts
+  and plan compatible evolution. Avoid shared mutable domain models and
+  cross-service database ownership that defeats independent releases.
+- Choose monorepo or separate repos by ownership and release workflow, not
+  team size alone. Shared tooling need not imply shared runtime/domain models.
+- Select synchronous calls when an immediate response or consistency contract
+  requires them; select events when asynchronous decoupling serves the product.
+  Define retries, timeouts, backpressure, idempotency, ordering, deduplication,
+  dead-letter handling, and tracing for the chosen communication pattern.
+- Choose managed services or an orchestrator from concrete networking,
+  lifecycle, scheduling, availability, and ownership requirements. Avoid adding
+  a gateway, broker, or Kubernetes merely because multiple services exist.
 
-- **Terraform** (default) when there is more than 1–2 resources or multiple
-  services/environments; plain CLI scripts acceptable for a single simple
-  service — document whatever exists in `docs/stack.md`.
-- Environments: dev (local compose), staging, prod for products; a single
-  prod is acceptable for internal tools.
-- Configuration via environment variables (12-factor); no config in images.
+## Infrastructure and environments (L10)
+
+- Prefer versioned infrastructure when repeatability, multiple environments,
+  compliance, or operational complexity justify it. Terraform is a starting
+  option; existing IaC standards or a small documented platform workflow may fit.
+- Separate test, staging, and production according to blast radius and data policy.
+  Small internal tools still need safe validation and recovery appropriate to
+  their impact; do not infer safety from their audience alone.
+- Separate environment configuration from immutable application artifacts.
+  Non-secret static configuration can be packaged when intentional; secrets
+  must not be embedded. Document rollback and roll-forward, migrations, backups,
+  restore tests, and who operates the system.

@@ -1,104 +1,124 @@
-# Python Stack Defaults
+# Python stack defaults
 
-Opinionated defaults for Python profiles. Versions are deliberately NOT
-recorded here — verify the latest stable at generation time (see
-`decision-criteria.md`). Health classes as defined there.
+Use these defaults to assemble a Python stack around the project's profile
+and constraints. Apply the shared [decision criteria](../decision-criteria.md)
+for tool evaluation, release verification, and audit health.
 
-## Language & runtime
+Jump to: [Runtime](#language-and-runtime) · [Profiles](#profile-rest-api) ·
+[Data](#data-layer) · [Testing](#testing) ·
+[Quality](#code-quality-and-structure) · [Operations](#observability-and-deployment)
 
-- **Python:** latest stable minor release (verify at python.org). Avoid
-  running on a minor in its final months before EOL.
-- **Version & package management:** uv (default — manages Python itself,
-  fast resolution, lockfile, workspaces; no pyenv/venv juggling).
-  Alternatives: Poetry (mature; fine if the org standard), pip-tools
-  (minimal; CAUTION — no environment management).
+## Language and runtime
+
+- **Python:** choose the latest compatible, supported stable release after
+  checking runtime support and the selected frameworks, drivers, deployment
+  platform, and build wheels. Do not select a minor approaching EOL.
+- **Version & package management:** uv is the default for runtime management,
+  resolution, lockfiles, and workspaces. Poetry or pip-tools are reasonable
+  when team conventions or a simpler dependency workflow justify them;
+  document environment management separately when the tool does not own it.
 
 ## Profile: REST API
 
-- **FastAPI** — default. Async, Pydantic-native, OpenAPI built in, huge
-  ecosystem. HEALTHY.
-- **Litestar** — compare when dependency injection, performance, or a more
-  structured larger app matter. HEALTHY.
-- **Django (+ DRF or django-ninja)** — when batteries matter: admin, mature
-  auth, ORM-first workflows. HEALTHY but heavier; changes several other
-  defaults (Django ORM, its migrations, its settings system).
-- ASGI server: **uvicorn** (default). Settings: **pydantic-settings**. HTTP
-  client: **httpx**.
+- **FastAPI** is the default for typed ASGI APIs with OpenAPI requirements.
+  Litestar is an alternative when its framework structure or dependency
+  injection fits the project; compare the actual requirements.
+- **Django with DRF or django-ninja** fits products needing an integrated
+  admin, authentication, ORM, and migrations. Choosing Django replaces the
+  default SQLAlchemy/Alembic pair and requires framework-specific settings,
+  testing, deployment, and instrumentation decisions.
+- **Flask** is viable for synchronous services when its simpler model and
+  team experience fit. Async needs are a reason to compare ASGI frameworks,
+  not evidence that an existing Flask application is unhealthy.
+- For an ASGI application, uvicorn is a starting server choice. Add
+  pydantic-settings for typed configuration or httpx for outbound HTTP when
+  needed; these libraries are independent decisions.
 
 ## Profile: MCP server
 
-- **Official `mcp` SDK** (modelcontextprotocol/python-sdk, includes the
-  FastMCP interface) — default. HEALTHY (young but official).
-- **FastMCP 2.x** (jlowin/fastmcp) — when you need composition, proxies, or
-  auth middleware beyond the official SDK. CAUTION (fast-moving; verify
-  current stability).
-- **Transport:** stdio for local agents; **Streamable HTTP** for remote
-  deployments (SSE transport is deprecated). On Cloud Run: Streamable HTTP
-  in a container.
+- Start with the official MCP Python SDK. Compare a separate FastMCP package
+  only when required composition, proxying, or authentication features justify
+  it. Verify package identity, current APIs, stability, and SDK compatibility.
+- Choose **stdio** for a client-launched local process or a supported remote
+  transport such as **Streamable HTTP** for remote clients. Verify current
+  protocol and SDK support; do not confuse legacy HTTP+SSE transport with SSE
+  streaming used inside another transport.
+- Remote deployments require compatible protocol authorization, session and
+  connection lifecycle, and client discovery. Use the
+  [security](../security.md#authentication-and-authorization-l7) and
+  [deployment](../deployment.md) guidance. For stdio, assess local process
+  permissions and lifecycle instead of HTTP requirements.
 
 ## Profile: GraphQL API
 
-- **Strawberry** — default (code-first, type-friendly, ASGI-native). HEALTHY.
-- **Ariadne** — schema-first alternative. HEALTHY.
-- **Graphene** — legacy; AVOID for new work.
+- **Strawberry** is a starting point for code-first typed schemas;
+  **Ariadne** fits schema-first workflows. Assess Graphene or another existing
+  framework by maintenance, integration, and migration cost.
+- Document query complexity/depth limits and authorization at resource and
+  field boundaries where needed.
 
 ## Profile: gRPC service
 
-- **grpcio + grpcio-tools + protobuf** — official toolchain. HEALTHY.
-- Buf for codegen/CLI DX is a reasonable add-on.
-- Cloud Run: enable HTTP/2; the service must accept h2c.
+- **grpcio + grpcio-tools + protobuf** is the starting toolchain. Verify
+  compatible generator/runtime versions and generated-code expectations.
+- Buf is optional for schema checks and code generation workflows.
+- Validate HTTP/2, connection lifecycle, ingress, and health-check support on
+  the selected deployment platform before promising compatibility.
 
 ## Data layer
 
-- **Database:** PostgreSQL (default). Local: Docker/compose. Prod on GCP:
-  Cloud SQL.
-- **ORM:** SQLAlchemy 2.x (default) + **Alembic** migrations; asyncpg driver
-  for async apps. SQLModel — thin FastAPI-flavored alternative; CAUTION for
-  complex domains. Django ORM when Django was chosen.
-- **Cache/sessions:** Redis (Memorystore on GCP).
-- **Background jobs:** arq (default — async, Redis-based, simple) / Celery
-  (mature, feature-rich, heavier, sync model) / Dramatiq (middle ground).
-  Pick by requirements: scheduling, retries, routing complexity.
-- **Blob storage:** GCS on GCP; MinIO via Docker for local parity.
+Add persistence, caches, and workers only for an identified requirement.
+
+- **PostgreSQL** is the relational starting point. Use Docker/Compose locally
+  and a managed database or deliberately operated OCI service in production,
+  subject to user constraints. Embedded storage can be sufficient when sharing,
+  durability, concurrency, and deployment requirements permit it.
+- **SQLAlchemy + Alembic** fits non-Django relational applications; choose a
+  driver compatible with synchronous or asynchronous execution. SQLModel is an
+  alternative if its model approach fits the domain. Django uses its own ORM
+  and migrations unless a documented integration justifies otherwise.
+- Add **Redis** only for a concrete cache/session/coordination requirement.
+- For background jobs compare arq, Celery, or Dramatiq against execution
+  model, retries, scheduling, routing, maintenance, and platform constraints.
+  Do not assume an HTTP service can run durable work after a response.
+- Use the selected provider's object-storage API. An S3-compatible local
+  service is suitable for an S3 integration; it does not establish parity with
+  a GCS API. Record emulator/adapter limitations and integration coverage.
 
 ## Testing
 
-- **pytest** (default) + pytest-asyncio for async code; coverage via
-  pytest-cov.
-- **Integration:** Testcontainers-python (default when DB/Redis/broker
-  involved).
-- **HTTP testing:** httpx ASGI transport against the app (no live server).
-- Fixtures/factories: polyfactory or factory-boy.
+- **pytest** is the default; add an async plugin matching the async library
+  and version. Use pytest-cov when coverage reporting helps the quality gate.
+- Use Django's testing integrations when Django is selected; account for its
+  transaction, settings, and async behavior rather than assuming ASGI fixtures.
+- **Testcontainers** or isolated CI service containers support database/broker
+  integration tests. Confirm Docker availability; document managed test
+  environments when the execution environment prohibits containers.
+- httpx ASGI transport fits in-process ASGI tests. Test application lifespan
+  explicitly where the transport does not manage it. Add real-network tests
+  only for behavior that requires the server/protocol boundary.
+- Choose factories and fixtures to fit the domain; they are optional.
 
-## Code quality
+## Code quality and structure
 
-- **ruff** — lint + format (single tool). Default.
-- **Type checking:** pyright (default) or mypy (ecosystem standard, slower).
-  ty (Astral) is promising — CAUTION until stable; verify status.
-- **pre-commit** hooks running ruff (+ type checker). Default: yes.
-- Commits: Conventional Commits.
+- **ruff** is the default linter/formatter. **pyright** or **mypy** are starting
+  type-checker choices; compare alternatives by current support and codebase fit.
+- pre-commit is an optional local convenience; enforce required gates in CI.
+  Adopt a commit convention only when it supports the release workflow.
+- Prefer a `src/` package layout and `pyproject.toml` for supported tooling.
+  Use feature modules as complexity grows; preserve Django's conventions when
+  Django is selected. Do not require every tool's settings to fit one file.
 
-## Observability
+## Observability and deployment
 
-- **structlog** — JSON structured logging (default).
-- **OpenTelemetry** SDK + FastAPI instrumentation for traces/metrics.
-- Sentry SDK for error tracking (optional, ask).
-
-## Project structure
-
-- `src/` layout; `pyproject.toml` as the single configuration surface (uv,
-  ruff, pyright, pytest).
-- Package-by-feature inside `app/` for anything nontrivial; flat modules
-  acceptable for small services.
-
-## Cloud Run notes
-
-- Listen on `$PORT`; scale workers via `WEB_CONCURRENCY`.
-- Graceful shutdown on SIGTERM (FastAPI/Starlette lifespan).
-- `/healthz` endpoint for startup/liveness probes.
-- min-instances 0 (cost) vs 1 (latency-sensitive public APIs).
-
-## Avoid for new work
-
-- Flask for new async APIs (fine for tiny sync tools).
-- pipenv (stagnant), setup.py-only packaging, Graphene (new work).
+- Structured JSON logging via structlog or standard-library logging is a
+  starting point. Redact secrets and sensitive fields.
+- Select OpenTelemetry instrumentation for the framework actually chosen,
+  with compatible exporters and a defined metrics/tracing destination.
+  Error tracking is optional based on operational needs and data policy.
+- For HTTP containers, verify the platform's required port, listening
+  interface, startup checks, and shutdown contract. Derive workers and
+  concurrency from workload measurements and resource limits.
+- HTTP probes, containers, and Cloud Run are conditional deployment choices;
+  local stdio tools need a process lifecycle and stderr logging strategy.
+  Use the [deployment guide](../deployment.md) for platform verification.

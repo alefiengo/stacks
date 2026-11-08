@@ -1,0 +1,86 @@
+# Contributing
+
+Changes should make stack decisions clearer, recommendations more coherent,
+or audits better supported by evidence. This repository contains an agent
+skill and its documentation; contributing does not require application
+dependencies or a running cloud environment.
+
+## Make a focused change
+
+1. Read [SKILL.md](SKILL.md) and the resources relevant to your change.
+2. Describe the behavior being improved with a concrete request or project
+   situation. Keep unrelated wording and technology changes separate.
+3. Update the instruction, reference, template and acceptance scenario together
+   when they share a contract.
+4. Run the local checks and record what was verified.
+
+Keep examples portable and use synthetic data. Do not include credentials,
+private project paths, customer information or copied proprietary code.
+Follow [SECURITY.md](SECURITY.md) for potentially sensitive reports.
+
+## Preserve the skill's contracts
+
+- **Modes and activation:** distinguish stack definition from stack audit.
+  Implementation and scaffolding requests alone should not start the interview.
+- **Questions and authorization:** ask one unresolved material decision at a
+  time. Honor explicit delegation without interpreting silence as approval.
+- **Layers:** retain L1–L12 in outputs and explain `N/A` entries. Check the
+  applicability matrix when adding a profile or changing a dependency.
+- **Vocabulary:** keep decision status, inventory health, finding severity and
+  verification state distinct. Update their definitions and templates together.
+- **Evidence:** distinguish configuration from execution, declared from resolved
+  or observed versions, and missing evidence from an established defect.
+- **Recommendations:** treat language defaults as contextual starting points.
+  A different framework is not a defect; compatibility, support and project
+  requirements must drive recommendations.
+- **Safety and scope:** preserve project boundaries, source restrictions,
+  protection of secrets and existing documents, and the documentation-only
+  output contract.
+
+A change to a framework default must account for affected runtimes, packaging,
+drivers, migrations, tests and deployment guidance. Avoid static claims about
+the latest version or current provider capabilities; the skill verifies those
+when used.
+
+## Validate locally
+
+From the repository root, with **Python 3.9+** and Git available:
+
+```bash
+python3 -B validation/check_skill.py
+python3 -B -m unittest discover -s validation -p 'test_*.py'
+git diff --check
+```
+
+The validator uses the Python standard library. No package installation,
+application build or network access is required. It checks the local skill
+structure and selected documentation contracts; it does not establish that an
+agent follows every instruction.
+
+Review the applicable [acceptance scenarios](validation/README.md), especially
+when changing activation, checkpoints, source verification or inspection
+boundaries. Add or adjust scenarios when a new failure case is introduced.
+
+For a behavioral trial, use an isolated fixture and synthetic secrets as
+described in the validation guide. Record the request, attempted tool access,
+output and limitations. Keep structural checks, document walkthroughs and
+actual agent trials separate in your results. Do not label an unperformed
+installation or runtime evaluation as tested.
+
+## Submit a reviewable pull request
+
+Lead with the user-visible problem and resulting behavior. Include:
+
+- A concise explanation of the change and its reason.
+- Relevant instructions, references or scenarios updated.
+- Validation performed and any remaining limitations.
+
+Use relative links for repository resources, keep executable commands
+copyable, and avoid adding dependencies for checks the standard library can
+perform. A documentation-only correction needs proportionate review; a change
+to scope, verification or workflow needs evidence that the affected scenarios
+still behave as intended.
+
+The project uses the [MIT License](LICENSE). Include only material you are
+entitled to contribute under those terms. Maintainer details are in the
+[licensing guide](docs/maintainers/LICENSING.md).

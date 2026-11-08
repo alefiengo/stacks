@@ -1,114 +1,139 @@
-# TypeScript / Node Stack Defaults
+# TypeScript and Node.js stack defaults
 
-Opinionated defaults for TypeScript profiles. Versions are deliberately NOT
-recorded here — verify the latest stable at generation time (see
-`decision-criteria.md`).
+Use these defaults for TypeScript applications and Node.js services. Apply
+the shared [decision criteria](../decision-criteria.md) for tool evaluation,
+release verification, and audit health.
 
-## Runtime & tooling
+Jump to: [Runtime](#runtime-and-tooling) · [Profiles](#profile-rest-and-http-api) ·
+[Data](#data-layer) · [Testing](#testing) ·
+[Quality](#code-quality-and-structure) · [Operations](#observability-and-deployment)
 
-- **Node:** current active LTS line (verify the nodejs.org release schedule).
-- **Version manager:** fnm or volta (mise when the machine is polyglot).
-- **Package manager:** pnpm (default — strict, fast, workspaces). npm is
-  fine for tiny libraries; yarn — CAUTION for new projects.
-- **TypeScript:** `strict: true` always; ESM (`"type": "module"`) for new
-  packages; tsx for dev running; tsdown/tsup or tsc for builds.
+## Runtime and tooling
 
-## Profile: REST / HTTP API
+- **Node.js:** select a compatible supported LTS line after checking the official
+  release schedule, framework engines, build tooling, and hosting platform.
+- Use fnm, Volta, or mise only when runtime switching is needed and supported
+  on the developer platform; preserve an existing workable team convention.
+- **pnpm** is the default for workspaces and dependency management; npm and
+  Yarn are valid alternatives when compatible with the selected ecosystem.
+  Commit the matching lockfile and make CI use frozen/immutable resolution.
+- Prefer TypeScript strict checking. Decide ESM/CommonJS and build output from
+  the target runtime and consumers; do not force ESM onto incompatible hosts.
+  Use tsx, tsc, or a bundler according to development, library, or server needs.
 
-- **Hono** — default on Cloud Run: fast, TS-first, portable, tiny. HEALTHY.
-- **Fastify** — mature, plugin ecosystem, schema-based validation. HEALTHY.
-- **NestJS** — for large teams/domains wanting structure, DI, modules.
-  HEALTHY with a weight tradeoff; overkill for small services.
-- **Express** — AVOID for new work (legacy TypeScript story, no built-in
-  validation).
-- **Validation:** zod (default; verify current major) / valibot (smaller
-  footprint) / TypeBox (JSON Schema-first).
+## Profile: REST and HTTP API
+
+- **Hono** is a lightweight starting point; verify the adapter for the target
+  Node runtime and platform. **Fastify** fits plugin/schema-based APIs.
+- **NestJS** fits teams needing framework-enforced modules and dependency
+  injection. **Express** remains an option when its ecosystem and familiarity
+  fit; explicitly select validation, error handling, and operational tooling.
+- Choose zod, valibot, or TypeBox according to schema approach and framework
+  compatibility. Do not combine incompatible validator/provider versions.
 
 ## Profile: web frontend
 
-- **Next.js** — default when the app needs SSR/RSC or is product-grade.
-  HEALTHY but fast-moving; verify current major stability before
-  recommending.
-- **Vite + React + TanStack Router/Query** — default for an SPA behind an
-  API (simpler ops: static hosting/CDN). HEALTHY.
-- **Astro** — when content-heavy sites dominate.
-- **Styling:** Tailwind CSS (default) + shadcn/ui for component sourcing.
+- **Next.js** is a starting point when server rendering or its server/client
+  architecture solves a concrete requirement. Verify framework, React,
+  runtime, deployment adapter, and cache behavior together.
+- **Vite + React** fits browser applications consuming an API; choose routing
+  and data-fetching libraries only as needed. Static build artifacts can deploy
+  to a CDN without an application container or server runtime.
+- **Astro** fits content-heavy sites; compare other frameworks when existing
+  team expertise or constraints favor them.
+- Tailwind CSS and sourced components such as shadcn/ui are optional styling
+  choices. Include accessibility, ownership of copied code, and updates in
+  the decision rather than assuming a component package meets those needs.
 
 ## Profile: MCP server
 
-- **Official `@modelcontextprotocol/sdk`** — default. HEALTHY.
-- Transport: stdio (local) / **Streamable HTTP** (remote; SSE deprecated).
-  On Cloud Run: Streamable HTTP container; consider OAuth/OIDC in front.
+- Start with the official TypeScript MCP SDK; verify the current package/API
+  layout, runtime requirements, and compatibility with the intended clients.
+- Choose **stdio** for local client-launched processes or a supported remote
+  transport such as **Streamable HTTP** for remote clients. Verify the current
+  protocol and SDK; legacy HTTP+SSE is distinct from SSE streaming within a
+  newer transport.
+- For remote deployments, verify protocol authorization/discovery, client
+  compatibility, sessions, streaming, reconnects, and scaling. An arbitrary
+  OIDC proxy is not sufficient evidence that these requirements are met.
+  See [authentication and authorization](../security.md#authentication-and-authorization-l7)
+  and the [deployment guide](../deployment.md).
 
 ## Profile: GraphQL API
 
-- **Server:** GraphQL Yoga (default — Envelop plugin ecosystem) or Apollo
-  Server (mature alternative).
-- **Schema:** Pothos (code-first, TS-native) default; graphql-codegen for
-  client-side typing.
+- **GraphQL Yoga** or **Apollo Server** are starting server choices.
+  **Pothos** fits code-first schemas; choose schema-first tooling when needed.
+- Verify server, GraphQL implementation, framework adapter, and code generator
+  compatibility. Add client code generation when it serves actual consumers.
+- Define complexity/depth limits and authorization at appropriate resource
+  and field boundaries.
 
 ## Profile: gRPC service
 
-- **nice-grpc** (TS-native codegen) or **@grpc/grpc-js + protobuf-ts**.
-- **Connect (connect-es)** — recommended when browser clients are in scope
-  (Connect protocol + gRPC compatibility). CAUTION: verify current
-  ecosystem state before recommending.
+- Compare **nice-grpc** or **@grpc/grpc-js** with an appropriate TypeScript
+  generator. Verify generator/runtime compatibility and supported protocols.
+- Consider **Connect** when browser clients or its protocol are required;
+  verify the server adapter, generated clients, and platform support instead
+  of assuming every gRPC/browser combination works.
 
-## TS-to-TS internal APIs
+## Internal TypeScript APIs
 
-- **tRPC** — default when client and server share a pnpm monorepo
-  (end-to-end types, no schema duplication).
-- **OpenAPI + openapi-typescript** — when the contract must be
-  language-neutral or externally consumed.
+- **tRPC** fits consumers that can share TypeScript contracts and coordinate
+  releases. It does not require a monorepo, and sharing a monorepo does not
+  alone justify choosing it.
+- **OpenAPI** with client generation fits language-neutral or externally
+  consumed contracts. Preserve the ability to evolve contracts independently.
 
 ## Data layer
 
-- **Database:** PostgreSQL (default) — same policy as the Python stack.
-- **ORM:** Drizzle (default — SQL-like control, light runtime, bundled
-  migrations) or Prisma (model-first DX, schema DSL, heavier runtime).
-  Choose by taste: Drizzle for SQL control, Prisma for DX. Kysely when only
-  a type-safe query builder is wanted. TypeORM — AVOID for new work.
-- **Cache:** Redis.
-- **Queues:** BullMQ (Redis-based, default) / Graphile Worker (when staying
-  PostgreSQL-only).
+Add persistence, caches, and workers only for an identified requirement.
+
+- **PostgreSQL** is the relational starting point; use Docker/Compose locally
+  and a managed database or deliberately operated OCI service in production,
+  subject to constraints. Embedded storage may fit simpler requirements.
+- Compare **Drizzle**, **Prisma**, **Kysely**, or an existing ORM by SQL control,
+  schema/migration workflow, runtime, driver support, and domain needs.
+  Migration plans must consider existing data and rollback/roll-forward safety.
+- Add **Redis** only for a concrete requirement. For jobs, compare **BullMQ**
+  with a PostgreSQL-backed option such as **Graphile Worker** according to
+  durability, retry, scheduling, and operational requirements.
+- Background workers need an explicit execution platform and idempotency;
+  do not assume work continues safely after an HTTP response.
 
 ## Testing
 
-- **Vitest** — unit/integration (default).
-- **Playwright** — e2e and browser tests (default).
-- **Testing Library** for components; Fastify `app.inject` / Hono
-  `app.request` for HTTP tests without a live server.
-- Integration DB: Testcontainers-node or a compose-backed test environment.
+- **Vitest** is a starting runner for supported unit/component/integration
+  workflows. Verify framework-specific setup rather than imposing it on
+  unsupported server-component or platform boundaries.
+- **Playwright** supports browser/end-to-end tests when a browser is in scope;
+  Testing Library fits component behavior tests.
+- Use framework in-process HTTP tests when available, such as Fastify inject
+  or Hono request; add real-network tests for transport-specific behavior.
+- Use Testcontainers, isolated CI service containers, or an approved managed
+  test environment for database/broker integrations. Confirm execution access.
 
-## Code quality
+## Code quality and structure
 
-- **Biome** — default (lint + format in one fast tool, single config).
-- **ESLint + Prettier** — when a required plugin is missing from Biome
-  (verify current plugin coverage).
-- Types in CI: `tsc --noEmit`.
-- Hooks: lefthook (default) or husky + lint-staged.
-- Commits: Conventional Commits.
+- **Biome** is a lint/format starting point. Choose ESLint/Prettier when
+  required framework rules, plugins, or conventions are not covered; verify
+  current coverage. Type-check separately using the compatible compiler or
+  framework tooling; do not mistake transpilation for type checking.
+- lefthook, husky, or equivalent hooks are optional local conveniences. Enforce
+  required gates in CI; choose a commit convention according to release needs.
+- Use workspaces when shared tooling or coordinated packages justify them;
+  `apps/` and `packages/` are a common layout. A single application can use
+  feature modules in `src/`. Task orchestration is optional as the repo grows.
 
-## Observability
+## Observability and deployment
 
-- **pino** — structured logging (default).
-- **OpenTelemetry** (`@opentelemetry/sdk-node` + auto-instrumentations).
-- Sentry for error tracking (optional, ask).
-
-## Project structure
-
-- **pnpm workspaces monorepo** when API + frontend or multiple services:
-  `apps/` + `packages/`. Turborepo optional as task orchestration grows.
-- Single app: `src/` with feature modules.
-
-## Cloud Run notes
-
-- Listen on `PORT`; handle SIGTERM (stop accepting, drain, close).
-- Health endpoint for startup/liveness probes.
-- Cold starts: bundle to a single build artifact (esbuild/tsdown) and/or set
-  min-instances 1 for latency-sensitive public services.
-
-## Avoid for new work
-
-- Express (new projects), JavaScript without types for anything nontrivial,
-  moment.js (use dayjs or Temporal polyfills), NestJS for tiny services.
+- **pino** or framework-native structured logging is a starting point; redact
+  secrets and sensitive fields. Select compatible OpenTelemetry instrumentation
+  for the actual Node/browser runtime and define collection destinations.
+- Browser telemetry and error tracking need a data policy and consent where
+  applicable. They are optional, not mandatory dependencies for every profile.
+- For HTTP containers, verify port/interface, shutdown, startup checks, and
+  streaming requirements on the selected platform. Bundle only when native
+  modules, dynamic assets, framework loaders, and source maps still work.
+- Choose cold-start and concurrency settings from measured requirements;
+  static hosting, serverless runtimes, and local stdio are distinct deployment
+  models. Use the [deployment guide](../deployment.md) for platform verification.

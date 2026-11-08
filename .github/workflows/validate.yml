@@ -1,0 +1,29 @@
+name: Validate skill
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out source
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          persist-credentials: false
+      - name: Validate documentation and package
+        run: python3 -B validation/check_skill.py
+      - name: Test validator failure paths
+        run: python3 -B -m unittest discover -s validation -p 'test_*.py'
+      - name: Check whitespace
+        run: git show --format= --check HEAD

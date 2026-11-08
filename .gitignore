@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.env.*
+!.env.example
+/validation/.trial-*/
+/validation/.checker-negative-*/
+/validation/.check-test-*/
