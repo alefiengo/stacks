@@ -1,46 +1,59 @@
 # Skill architecture
 
-The repository hosts two skills with different execution contracts.
+The repository hosts two independent agent skills with different execution
+contracts:
 
-- `stacks` turns project requirements or repository evidence into technology
-  stack documentation. It is a knowledge package, not an application
-  generator: it never executes project commands or installs packages.
-- `scaffold` executes an approved plan derived from `docs/stack.md` and
-  generates a minimal project skeleton: it runs generators and package
-  managers, configures lint, tests, and CI, and verifies the result. Version 1
-  covers Python and TypeScript. It chooses no technologies, never commits,
-  pushes, or deploys, and builds a container image locally only when the
-  approved plan names it. The approved
-  [design](SCAFFOLD-DESIGN.md) records the decisions.
+| | `stacks` | `scaffold` |
+|---|---|---|
+| Purpose | Decide and document a technology stack | Execute an approved `docs/stack.md` |
+| Input | Requirements or repository evidence | An existing `docs/stack.md` |
+| Output | `docs/stack.md`, `docs/stack-audit.md` | Project files, plus implementation state in `docs/stack.md` |
+| Executes commands | Never | Yes, after explicit approval of a plan |
+| Network | Official sources for verification | Verification plus package installation |
 
-The sections below describe `stacks` unless they name `scaffold`.
+User-facing descriptions are in the [stacks guide](../stacks.md) and the
+[scaffold guide](../scaffold.md). This document explains how the skills are
+built and why.
 
 ## Package layout
 
-Each skill is packaged separately. The `stacks` runtime lives in
-`skills/stacks/`: `SKILL.md`, `LICENSE`, `references/`, and `templates/`. The
-`scaffold` runtime lives in `skills/scaffold/`: `SKILL.md`, `LICENSE`,
-`references/` (input contract, execution safety, verification, and a guide per
-language under `references/stacks/`), and `templates/` (the report). The skill
-installer copies one whole skill directory into the user's project or
-user-level skill directory, so everything in it is installed. Keeping each
+```text
+skills/
+├── stacks/
+│   ├── SKILL.md            # activation, operating contract, modes, routing
+│   ├── LICENSE             # byte-identical copy of the root license
+│   ├── references/         # loaded on demand; stacks/ holds language defaults
+│   └── templates/          # docs/stack.md and docs/stack-audit.md
+└── scaffold/
+    ├── SKILL.md            # activation, contract, phases, routing
+    ├── LICENSE
+    ├── references/         # input contract, execution safety, verification;
+    │                       # stacks/ holds one execution guide per language
+    └── templates/          # the scaffold report
+```
+
+The skill installer copies one whole skill directory into the user's project
+or user-level skill directory, so everything in it is installed. Keeping each
 runtime in its own directory means an installed package contains only runtime
 files; repository instructions, maintainer documentation, validation tools,
 and workflows stay at the repository root and are never copied. Each directory
-name matches its skill `name`, and each `LICENSE` is a byte-identical copy of
-the root license so installed copies retain the notice.
+name matches its skill `name`, and each `LICENSE` keeps the notice with
+installed copies.
 
-The packages are independent. Because an installer copies a single directory,
-neither skill links to the other, and each works when the other is absent.
-`scaffold` without a `docs/stack.md` offers to run `stacks` rather than
-referring to its files.
+Because an installer copies a single directory, neither skill links to the
+other, and each works when the other is absent. `scaffold` without a
+`docs/stack.md` offers to run `stacks` rather than referring to its files.
 
-## Resource boundaries
+Both runtimes are independent of a particular agent or API. Native skill
+loading, file tools, retrieval, structured questions, and planning UI are
+capabilities the host may provide. Missing capabilities use explicit
+fallbacks: ordinary conversation, supplied evidence, pending external checks,
+or complete content returned without claiming it was saved or executed.
 
-The table covers `stacks`. The `scaffold` package follows the same routing
-pattern: its [SKILL.md](../../skills/scaffold/SKILL.md) links every reference
-and the report template, and each reference loads only in the phase that needs
-it.
+## stacks
+
+`stacks` is a knowledge package, not an application generator. Its entry
+point routes rather than repeating detail:
 
 | Resource | Responsibility | Loaded when |
 |---|---|---|
@@ -53,47 +66,67 @@ it.
 | [Deployment](../../skills/stacks/references/deployment.md) and [security](../../skills/stacks/references/security.md) | Cross-cutting operational decisions | Applicable layers |
 | [Audit guide](../../skills/stacks/references/audit.md) | Inspection, evidence, severity, prioritized actions | Audit mode |
 | [Templates](../../skills/stacks/templates/stack.md) | Output structure and rendering instructions | Writing project documents |
-| [Validation](../../validation/README.md) | Repository checks and acceptance scenarios | Maintainer work |
-
-References are loaded on demand. The entry point should route rather than
-repeat every detail. Resource paths are relative to the installed skill;
-project inputs and outputs are relative to the separately authorized target.
-
-The runtime is independent of a particular agent or API. Native skill loading,
-file tools, retrieval, structured questions, and planning UI are capabilities
-that the host may provide. Missing capabilities use explicit fallbacks: ordinary
-conversation, supplied evidence, pending external checks, or a complete document
-returned without claiming a file was saved. Maintainer tooling and AGENTS.md
-are not runtime dependencies.
-
-## Modes and artifacts
 
 Define mode combines declared constraints, a bounded intake, contextual
-defaults, and permitted official verification sources. It writes
+defaults, and permitted official verification sources, then writes
 `docs/stack.md`. Audit mode combines scoped repository evidence and permitted
-external checks, then writes `docs/stack-audit.md`. A target stack document
-is optional and requires a request or prior authorization.
+external checks, then writes `docs/stack-audit.md`. Both modes preserve
+existing user content and write documentation only: they do not install
+dependencies, execute project scripts, create application configuration, or
+deploy.
 
-Both modes preserve existing user content and write documentation only.
-Without safe file writes, they return the complete intended document in the
-conversation and explicitly state that it has not been saved.
-They do not install dependencies, execute project scripts, create application
-configuration, or deploy. Maintainer validation scripts belong to this
-repository and are separate from the installed skill's project workflow.
+The layer reference and both templates retain L1–L12; an irrelevant layer is
+`N/A` with a reason. The shared vocabularies are decision status, inventory
+health, finding severity, verification state, and security-control status.
+They have different meanings and canonical definitions in the decision
+criteria, the audit guide, and the security guidance. Guided checkpoints need
+an explicit reply unless prior authorization covers the choice and the write;
+unknown facts stay unknown even when the user delegates a decision.
 
-## Shared contracts
+## scaffold
 
-The layer reference and both templates retain L1–L12. Applicability is
-contextual: mark an irrelevant layer N/A and explain why. The shared
-vocabularies are decision status, inventory health, finding severity,
-verification state, and security-control status. They have different meanings;
-use their canonical definitions (in decision criteria, the audit guide, and
-security guidance) instead of merging them.
+`scaffold` executes decisions; it never makes them. Its
+[SKILL.md](../../skills/scaffold/SKILL.md) links every reference and the
+report template, and each reference loads in the phase that needs it.
 
-Guided checkpoints require an explicit reply unless prior authorization
-already covers the choice and writing. Unknown facts remain unknown even
-when the user delegates a decision. Available package versions are not
-automatically compatible, supported, stable, or verified.
+It reads the `docs/stack.md` summary and acts on each layer's status:
+
+| Status in `docs/stack.md` | Behavior |
+|---|---|
+| `confirmed` | Implement |
+| `default — revisit` | Implement, listed in the plan as a delegated default |
+| `open` | Stop for that layer and ask; never choose a replacement |
+| `N/A` | Skip, keeping the stated reason |
+| Version `TBD — verify` | Resolve in preflight from raw registry or API responses; ask if that fails |
+
+A run has six phases: preflight, an always-explicit plan checkpoint, generate,
+configure, verify, and record. Before approval it only lists and reads files
+and sends read-only requests to official registry and API endpoints; it runs
+no package manager, generator, or git command. After approval it runs only the
+plan's commands; anything else is a new checkpoint.
+
+Its execution contract:
+
+- No commits, pushes, deployments, cloud resources, or published images.
+  A container image is built locally only when `docs/stack.md` decided one
+  and the approved plan names the build.
+- Commands run inside the target root. Outside it, only package-manager
+  caches and stores, managed interpreter downloads, and the local image store
+  are written, all named in the plan.
+- Dependency install and lifecycle scripts stay blocked unless the plan lists
+  them, and runtime-fetched templates are read before approval.
+- Formatters and fixers are restricted to planned paths. `docs/stack.md` and
+  installed agent skills are checksummed in preflight; verification proves
+  they are unchanged, and recording changes only the implementation-state
+  fields and labeled rows in the version log.
+- Each check is recorded as `passed`, `failed`, or `not run` with its command
+  and exit code. CI is recorded as defined, never as passing.
+
+Owner decisions of 2026-11-10: same repository, installed separately;
+`docs/stack.md` required; version 1 covers Python and TypeScript; the scope
+ends at "builds, tests pass, CI defined"; no commits; local image builds when
+planned. After an independent review, `scaffold` also appends labeled rows to
+the version log of `docs/stack.md`, so each verified version stays traceable.
 
 ## Contracts between the skills
 
@@ -106,16 +139,15 @@ consistent:
   which files neither skill opens.
 - **`docs/stack.md` fields.** `scaffold` reads the stack summary, dependency
   specification, local development, CI/CD, version verification log, and open
-  decisions sections, and writes only the implementation-state fields (authority
-  and implementation state, execution status, implementation evidence). Each
-  field it names must exist in the
-  [stack template](../../skills/stacks/templates/stack.md). Decision statuses
-  and verification states are defined by `stacks` and quoted, not redefined, by
-  `scaffold`.
+  decisions sections, and writes only the implementation-state fields
+  (authority and implementation state, execution status, implementation
+  evidence) and labeled version-log rows. Each field it names must exist in
+  the [stack template](../../skills/stacks/templates/stack.md). Decision
+  statuses and verification states are defined by `stacks` and quoted, not
+  redefined, by `scaffold`.
 
 `scaffold` execution is never covered by an authorization delegated in
-`stacks`; it needs approval of the concrete plan, and commands outside that
-plan need a new checkpoint.
+`stacks`; it needs approval of the concrete plan.
 
 ## Design choices
 
@@ -123,10 +155,15 @@ plan need a new checkpoint.
   They are starting points, not a basis for negative findings on their own.
 - Docker is a useful local default for networked service dependencies; delivery
   requirements decide whether the application needs a container.
-- Verification happens at recommendation time rather than through a stale
-  catalog of current versions embedded in Markdown.
-- Evidence and coverage are explicit so a partial audit remains useful without
-  claiming a complete assessment.
+- Verification happens at run time rather than through a stale catalog of
+  current versions embedded in Markdown.
+- Evidence and coverage are explicit, so partial results stay useful without
+  claiming completeness.
+- Execution is split from decision so that a reviewed document, not an
+  improvised chain of commands, drives what gets installed.
+- Behavior is validated with agent trials in disposable fixtures, and every
+  trial result is re-verified on disk; `scaffold` trials install packages and
+  run only on a maintainer machine.
 - Maintainer checks use the Python standard library. Adding a toolchain should
   solve a demonstrated maintenance problem.
 

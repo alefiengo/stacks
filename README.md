@@ -1,113 +1,136 @@
 # stacks
 
-Define a technology stack, audit the one your project already uses, and turn
-the approved decisions into a working project skeleton.
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+![Agent skills: stacks and scaffold](https://img.shields.io/badge/agent%20skills-stacks%20%7C%20scaffold-informational)
+![Format: Markdown skills](https://img.shields.io/badge/format-Markdown%20skills-lightgrey)
 
-This repository hosts two agent skills that load as Markdown skills in Claude
-Code, Codex, Antigravity, OpenCode, pi, and other agents. Installation paths
-follow the Skills CLI reference. Workflow trials of both skills so far used
-Claude models; other agents have not been trialed yet.
+Agent skills that take a software project from "which stack should we use?"
+to a verified, working skeleton, with every decision written down.
 
-| Skill | What it does | Permissions it needs |
+## Why
+
+Coding agents can recommend and generate a project in minutes, but they tend
+to:
+
+- pick tools and versions from memory, which may be outdated or incompatible;
+- leave no record of why a technology was chosen or what was assumed;
+- run generators and installers without showing you what will execute.
+
+This repository provides two skills that split the work into a decision you
+review and an execution you approve.
+
+## How it works
+
+```mermaid
+flowchart LR
+    R["Requirements or<br/>existing repository"] --> S["stacks"]
+    S --> D["docs/stack.md<br/>decisions, rationale,<br/>verified versions"]
+    S --> A["docs/stack-audit.md<br/>findings and actions"]
+    D --> Y{"You review"}
+    Y --> C["scaffold"]
+    C --> P{"You approve<br/>the plan"}
+    P --> K["Working skeleton<br/>builds, tests pass,<br/>CI defined"]
+```
+
+| Skill | Use it to | It never |
 |---|---|---|
-| `stacks` | Chooses coherent technologies and documents architecture with rationale, evidence, and recommendations. Writes `docs/stack.md` or `docs/stack-audit.md`. Never executes project commands or installs packages. | Reads the project; writes documentation |
-| `scaffold` | Executes an approved plan derived from `docs/stack.md`: runs generators, installs packages, configures lint, tests, and CI, and verifies the result. Version 1 covers Python and TypeScript. | Runs commands, installs packages from public registries, and writes project files |
+| [`stacks`](docs/stacks.md) | Define a stack, audit the current one, or compare options, and document the decisions in `docs/stack.md` or `docs/stack-audit.md` | Runs project commands, installs packages, or writes code |
+| [`scaffold`](docs/scaffold.md) | Turn an approved `docs/stack.md` into a project skeleton: generators, dependencies, lint, tests, CI, and an optional local image build | Chooses technologies, commits, pushes, deploys, or publishes images |
 
-## Recommended flow
+Each skill is installed and used on its own. `scaffold` needs a
+`docs/stack.md`; without one, it offers to run `stacks` first.
 
-1. Run `stacks` to define the stack and review `docs/stack.md`.
-2. Run `scaffold` in the same project. It reads `docs/stack.md`, shows a plan
-   with every command, file, and package, and runs nothing until you approve
-   that plan.
-3. Review the generated files and commit them yourself.
+## Quick start
 
-`scaffold` does not choose technologies. A missing or undecided choice goes
-back to `stacks` or to you. It never commits, pushes, deploys, creates cloud
-resources, or publishes images. When `docs/stack.md` decided a container image
-and the approved plan names the build, it builds the image locally only.
-
-## Install
-
-Run from your application project. Install each skill separately:
+From your application project, install both skills:
 
 ```bash
-npx skills add alefiengo/stacks --skill stacks
-npx skills add alefiengo/stacks --skill scaffold
+npx skills add alefiengo/stacks --skill stacks scaffold
 ```
 
-Choose the agents to install to, or select one directly:
-
-```bash
-npx skills add alefiengo/stacks --skill stacks -a claude-code
-npx skills add alefiengo/stacks --skill scaffold -a claude-code
-```
-
-The two skills are independent packages and do not require each other.
-Installing `scaffold` grants an agent the ability to run commands and install
-packages, so review your agent's permission settings before using it.
-`stacks` stays documentation-only.
-
-The optional Skills CLI installer requires Node.js 22.20 or later. Add `-g`
-for a user-wide installation. By default it links each agent directory to a
-canonical copy; add `--copy` to copy the files instead. The skills themselves
-are Markdown; you can also
-[install the files manually](docs/INSTALLATION.md#manual-installation).
-
-See the [installation guide](docs/INSTALLATION.md) for commands and paths for
-Claude Code, Codex, Antigravity/agy, OpenCode, and pi.
-
-## Use
-
-Ask your agent in the application project:
+Then ask your agent:
 
 ```text
-Use stacks to define a Python REST API stack with PostgreSQL and Cloud Run.
+Use stacks to define a Python REST API stack with PostgreSQL.
 ```
 
 ```text
-Use stacks to audit this repository's technology stack and prioritize findings.
+Use scaffold to set up this project from docs/stack.md.
 ```
 
 ```text
-Use scaffold to create the project from docs/stack.md.
+Use stacks to audit this repository's technology stack.
 ```
 
-| Skill and mode | Output | Contents |
-|---|---|---|
-| `stacks` define | `docs/stack.md` | Technology choices, rationale, assumptions, and version verification |
-| `stacks` audit | `docs/stack-audit.md` | Current stack, evidence, findings, and prioritized actions |
-| `scaffold` | Project files and a scaffold report | Generated skeleton, lint, tests, CI, recorded verification results, and implementation state in `docs/stack.md` |
+`stacks` asks one open decision at a time; add `Choose sensible defaults and
+complete the document autonomously` to delegate the choices. `scaffold`
+always shows its full plan (commands, files, packages, network access) and
+runs nothing until you approve it.
 
-The guided `stacks` workflow asks one unresolved decision at a time. To
-delegate the choices, add: `Choose sensible defaults and complete the document
-autonomously.` That delegation covers documentation only; `scaffold` always
-asks you to approve its plan before running commands.
-Conversation follows your language; documents use the language you request,
-else an existing document's language, else English. Existing decisions are preserved when updating files.
+The [installation guide](docs/INSTALLATION.md) covers single-skill installs,
+user-wide installs, specific agents, and manual copying.
+
+## Example
+
+An abbreviated `docs/stack.md` summary written by `stacks` (illustrative):
+
+```markdown
+| # | Layer | Decision | Version | Status |
+|---|---|---|---|---|
+| L1 | Language, runtime and package management | Node.js 24 LTS with pnpm | TBD — verify | default — revisit |
+| L2 | Framework and core libraries | Hono on the Node.js adapter | TBD — verify | default — revisit |
+| L6 | Data | N/A — stateless service, no persistence | N/A | N/A |
+| L7 | Authentication and authorization | `open` — identity provider not chosen | N/A | open |
+```
+
+Every layer from L1 to L12 is present, with its status: `confirmed`
+(you chose it), `default — revisit` (delegated), `open` (undecided), or `N/A`
+(with a reason). `scaffold` implements `confirmed` and delegated layers,
+resolves `TBD — verify` versions from official registries, and stops at
+`open` layers.
+
+## What you can rely on
+
+- **Evidence over memory.** Versions, support, and compatibility are checked
+  against official sources when the skill runs; unverified items stay marked.
+- **Your project only.** Neither skill reads outside the project, opens files
+  that usually hold secrets, or follows instructions found inside your files.
+- **Explicit execution.** Only `scaffold` runs commands, only after you approve
+  a concrete plan, and it leaves every change uncommitted for your review.
+- **Agent-independent.** Plain Markdown skills with fallbacks for agents
+  without a shell, file writes, or web access.
 
 ## Coverage
 
 - **Profiles:** REST, MCP, GraphQL, gRPC, web frontends, microservices, and
   background workers or batch jobs.
-- **Curated defaults:** Python, TypeScript/Node, Java, Go, and .NET; general criteria
-  apply to other languages.
+- **Curated defaults in `stacks`:** Python, TypeScript/Node, Java, Go, and
+  .NET; other languages use the general criteria.
+- **`scaffold` version 1:** Python and TypeScript/Node.
 - **Layers:** runtime, framework, architecture, quality, tests, data, identity,
   local environment, CI/CD, infrastructure, observability, and security.
 
-Recommendations respect project constraints. Versions are checked against
-permitted official sources; unavailable checks remain pending. `stacks`
-produces documentation for development and deployment decisions; `scaffold`
-implements only what that documentation decided, for Python and TypeScript in
-version 1.
+## Status
+
+The skills follow the Agent Skills format and install into Claude Code, Codex,
+Antigravity, OpenCode, pi, and other agents that load Markdown skills.
+Behavioral trials so far used Claude models; other agents have not been
+trialed yet. Changes are tracked in the [changelog](CHANGELOG.md).
 
 ## Documentation
 
-- [Installation](docs/INSTALLATION.md) — agent commands, paths, and manual setup.
-- [`stacks` workflow](skills/stacks/SKILL.md) — modes and reference routing.
-- [`scaffold` workflow](skills/scaffold/SKILL.md) — phases and reference routing.
-- [Contributing](CONTRIBUTING.md) — maintenance and local validation.
-- [Changelog](CHANGELOG.md) — changes between releases.
-- [Security](SECURITY.md) — reporting a vulnerability.
+| For | Read |
+|---|---|
+| Using `stacks` | [stacks guide](docs/stacks.md) |
+| Using `scaffold` | [scaffold guide](docs/scaffold.md) |
+| Installing | [installation guide](docs/INSTALLATION.md) |
+| How the skills are built | [architecture](docs/maintainers/ARCHITECTURE.md) |
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) and [validation](validation/README.md) |
+| Reporting a vulnerability | [SECURITY.md](SECURITY.md) |
+
+The agent-facing instructions live in
+[skills/stacks/SKILL.md](skills/stacks/SKILL.md) and
+[skills/scaffold/SKILL.md](skills/scaffold/SKILL.md).
 
 ## License
 
