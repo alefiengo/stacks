@@ -40,7 +40,7 @@ MAINTAINER_FILES = (
     '.gitignore', '.github/workflows/validate.yml', '.github/dependabot.yml',
     '.github/PULL_REQUEST_TEMPLATE.md', 'docs/INSTALLATION.md',
     'docs/maintainers/ARCHITECTURE.md',
-    'docs/maintainers/RELEASING.md', 'docs/maintainers/LICENSING.md',
+    'docs/maintainers/RELEASING.md',
     'validation/README.md',
     'validation/check_skill.py', 'validation/test_check_skill.py',
 )
@@ -56,7 +56,7 @@ TEMP_PREFIXES = ('.trial-', '.checker-negative-', '.check-test-')
 MARKDOWN_SUFFIXES = {'.md', '.markdown'}
 MAX_RESOURCE_BYTES = 100_000
 # Scenario IDs are contiguous from S01; this is the minimum count that must remain.
-MIN_SCENARIOS = 42
+MIN_SCENARIOS = 44
 SCENARIOS = [f'S{number:02}' for number in range(1, MIN_SCENARIOS + 1)]
 PORTABILITY_SCENARIOS = [f'U{number:02}' for number in range(1, 9)]
 LAYERS = [f'L{number}' for number in range(1, 13)]

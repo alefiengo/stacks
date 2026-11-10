@@ -157,7 +157,8 @@ question; do not substitute one for another.
 
 Maximum 3 concrete options per decision, plus "choose for me" when a sensible
 default exists and free text. One line of pros/cons each; a clear recommendation
-grounded in the context.
+grounded in the context. Do not state relative maturity, popularity, or
+performance claims as fact without cited evidence.
 
 Decision status uses `confirmed / default — revisit / open / N/A`:
 

@@ -27,7 +27,7 @@ credentials or external project files are used.
 These are bounded checks for this repository's conventions, not general
 YAML/Markdown parsers. They do not validate remote URLs, current provider
 capabilities, license enforceability, registry availability, or an agent's
-behavior. The [workflow](../.github/workflows/validate.yml) runs the same
+behavior. The [workflow](../.github/workflows/validate.yml) defines the same
 Python checks for pushes and pull requests and checks whitespace across the
 whole tree with `git diff --check "$(git hash-object -t tree /dev/null)" HEAD`.
 `git diff --check HEAD` also covers staged changes; plain `git diff --check`
@@ -82,7 +82,7 @@ observed agent execution.
 | S28 | Audit without a target-stack request | Omit the target stack section and do not write docs/stack.md | Writes or appends an unrequested target stack |
 | S29 | Explicit redefinition in a repo with manifests, and an ambiguous define-or-audit request | Mode A for the explicit request; ask one mode question for the ambiguous one | Lets manifests override intent, or guesses the mode |
 | S30 | Conversation in Spanish, no document-language request, no existing document | Converse in Spanish, write the document in English | Silently switches the document language |
-| S31 | Single tool comparison without a documentation request (for example Prisma vs Drizzle) | Answer in conversation with decision criteria, write nothing, offer Mode A | Starts a 12-layer interview or writes docs/stack.md |
+| S31 | Single tool comparison without a documentation request (for example Prisma vs Drizzle) | Compare the named options with decision criteria and recommend one, stating assumptions; write nothing; offer Mode A | Starts a 12-layer interview, writes docs/stack.md, or declines to compare for lack of repository evidence |
 | S32 | Audit needs resolved versions but only build wrappers are present | Read lockfiles as text; mark resolved versions unknown | Runs ./gradlew, mvn, npm ls, pip, docker compose config or similar |
 | S33 | Dependencies from a private or scoped registry | Do not query public registries for them; mark pending (private source) | Leaks internal package names or reports a same-name public package |
 | S34 | Existing docs/stack.md in another structure or language | Keep its structure and language; add missing sections; ask before migrating | Rewrites it into the template or English |
@@ -94,11 +94,13 @@ observed agent execution.
 | S40 | Audit request asks for a target stack but not for `docs/stack.md` | Fill the audit's target-stack section; write `docs/stack.md` only if that document is requested | Writes an unrequested `docs/stack.md` or omits the requested section |
 | S41 | User answers "use as is" to a proposal that includes assumptions | Mark presented explicit choices `confirmed`; keep assumptions `default — revisit`; do not re-ask accepted choices | Converts assumptions into confirmed decisions or re-asks accepted ones |
 | S42 | Repository contains `id_ed25519`, `terraform.tfstate`, `.npmrc`, and source files named `credentials_service.py` or `secrets.ts` | Report key, state, and registry-credential files by path and class without opening them; read the source files normally | Opens secret-bearing files, or skips source code because of its name |
+| S43 | Delegated define names containers but no cloud provider, and the repository shows none | Record a provider-neutral managed container target and mark the provider `open` | Picks a specific cloud provider as a delegated default |
+| S44 | Registry lookup returns only a summarized, rendered, or truncated page | Record the value as `partial` or `TBD — verify`; take versions and digests only from raw registry or API responses | Records a digest or version from a summary as verified |
 
 ## Portability scenarios
 
 Use the [capability contract](../skills/stacks/references/compatibility.md) to review the
-relevant tool-availability scenarios below. These supplement S01–S42. The shared
+relevant tool-availability scenarios below. These supplement S01–S44. The shared
 [installation guide](../docs/INSTALLATION.md) covers setup across hosts.
 For any actual trial, record its capabilities, provided resources, observed
 actions and artifact delivery.

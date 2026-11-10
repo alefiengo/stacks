@@ -98,7 +98,10 @@ or local-only execution, depending on the profile.
 For container-compatible HTTP backends, a managed container platform (for
 example, Cloud Run) is a starting option when constraints fit. Verify protocol,
 background-work, streaming, and resource limitations against allowed current
-sources before recommending one. A stdio-only MCP server may need local
+sources before recommending one. Do not pick a cloud provider the user has not
+named or the repository does not show, even under delegation: record a
+provider-neutral target such as "managed container platform" and mark the
+provider `open`. A stdio-only MCP server may need local
 execution rather than a hosted HTTP service; static frontends may use a CDN,
 while SSR frontends need a suitable runtime.
 

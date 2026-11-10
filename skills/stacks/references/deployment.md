@@ -7,7 +7,7 @@ and [security guidance](security.md) to the selected platform.
 
 Jump to: [Local environment](#deployment-model-and-local-environment-l8) ·
 [Containers](#application-container-patterns) · [CI/CD](#cicd-l9) ·
-[Cloud Run](#google-cloud-run) · [Microservices](#distributed-systems-and-microservices) ·
+[Managed containers](#managed-container-platforms) · [Microservices](#distributed-systems-and-microservices) ·
 [Infrastructure](#infrastructure-and-environments-l10)
 
 ## Deployment model and local environment (L8)
@@ -78,10 +78,11 @@ host and team. Select remediation thresholds for scanner findings; record
 exceptions with scope, owner, and expiry. A recommended gate is not evidence
 that it already runs.
 
-## Google Cloud Run
+## Managed container platforms
 
-When Cloud Run is selected, verify its current runtime contract and the
-capabilities of the selected service, job, or worker model using permitted
+When a managed container platform is selected (for example Google Cloud Run,
+Amazon ECS on AWS Fargate, or Azure Container Apps), verify its current
+runtime contract and the capabilities of the selected service, job, or worker model using permitted
 official sources. Keep unavailable or disallowed lookups pending verification.
 
 - Distinguish request-serving HTTP/gRPC services from batch jobs, scheduled
@@ -99,7 +100,7 @@ official sources. Keep unavailable or disallowed lookups pending verification.
 - For remote MCP, verify SDK and protocol authorization and discovery,
   supported clients, streaming, reconnects, session routing and state, and scaling,
   and apply the [MCP security requirements](security.md#mcp-servers).
-  An OIDC or IAP proxy, or an ordinary browser login, does not by itself establish
+  An OIDC or identity-aware proxy, or an ordinary browser login, does not by itself establish
   protocol compatibility. Local stdio servers use a process lifecycle instead.
 - Use least-privilege identities and authenticate service-to-service calls;
   verify token audience and caller permissions. Network ingress restrictions

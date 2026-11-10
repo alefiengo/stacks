@@ -102,7 +102,7 @@ inspect, verify, or save something the host could not access or perform.
 | Define/recommend a new stack, including explicit redesign in an existing repo | A — Define |
 | Audit/review an existing project's technology stack | B — Audit |
 | Audit plus a target stack | B, filling the audit's target-stack section; write `docs/stack.md` only if that document is requested, then via A Phases 1–3 with the audit inventory as intake |
-| Compare specific options without asking for documentation | Answer in conversation with the [decision criteria](references/decision-criteria.md); write nothing; offer Mode A |
+| Compare specific options without asking for documentation | The question establishes the need: compare the named options with the [decision criteria](references/decision-criteria.md) and recommend one, stating assumptions; write nothing; offer Mode A |
 | Ambiguous goal | Ask one question: define or audit; accept free text |
 
 Inspect manifests within scope to inform the choice. Their presence does not

@@ -16,8 +16,9 @@ version.
   mode selection, document language, discovery without executing project
   tooling, private registries, existing documents in another structure,
   empty repositories, MCP transport security, installed agent skills,
-  checkpoint exits, published documentation, target-stack requests, and
-  secret-bearing files beyond `.env`.
+  checkpoint exits, published documentation, target-stack requests,
+  secret-bearing files beyond `.env`, unnamed cloud providers, and
+  summarized registry responses.
 - Offline validation with negative tests, and a continuous validation
   workflow for pushes and pull requests.
 - MIT license, security reporting guidance, and a documented release process.

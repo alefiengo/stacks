@@ -87,5 +87,5 @@ to scope, verification or workflow needs evidence that the affected scenarios
 still behave as intended.
 
 The project uses the [MIT License](LICENSE). Include only material you are
-entitled to contribute under those terms. Maintainer details are in the
-[licensing guide](docs/maintainers/LICENSING.md).
+entitled to contribute under those terms. If a contribution incorporates
+third-party text or code, identify its source and preserve its notices.

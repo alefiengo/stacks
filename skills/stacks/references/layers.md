@@ -150,7 +150,8 @@ Choose dependency updates and protection rules for the host and team. Use the
 
 ### L10 — Deployment and infrastructure
 
-Decide: platform (settled in Phase 1 Q4), environment isolation, versioned
+Decide: platform (settled in Phase 1 Q4; an unnamed cloud provider stays
+`open`, never a delegated default), environment isolation, versioned
 infrastructure, and recovery proportional to impact, repeatability, and
 ownership. Preserve workable IaC standards; for a new choice, compare IaC tools
 such as Terraform and OpenTofu and verify the current license of the selected

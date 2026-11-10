@@ -5,8 +5,8 @@ Define a technology stack or audit the one your project already uses.
 An agent skill for choosing coherent technologies and documenting architecture
 with rationale, evidence, and actionable recommendations. Designed for Claude
 Code, Codex, Antigravity, OpenCode, pi, and other agents that load Markdown
-skills. Installation paths follow the Skills CLI reference; trials in each
-agent have not been recorded yet.
+skills. Installation paths follow the Skills CLI reference. Workflow trials so
+far used Claude models; other agents have not been trialed yet.
 
 ## Install
 

@@ -25,7 +25,7 @@ to compensate for missing capabilities during a stack task.
 | Planning or task UI | Optionally track the workflow phases | Follow the phases in conversation; do not require a special plan mode |
 | Project file discovery and reads | Inspect bounded files through the host's authorized file tools | Use user-provided excerpts as scoped evidence; do not infer an empty or inspected repository |
 | Local shell | Run only the [discovery commands](#discovery-commands) when useful | Use file tools or supplied evidence; shell execution is not required |
-| Official-source browsing or retrieval | Verify current releases and compatibility within permitted sources | Mark values `TBD — verify` and record each source as `consulted`, `attempted`, or `not queried` |
+| Official-source browsing or retrieval | Verify current releases and compatibility within permitted sources, using the raw registry or API response for versions and digests; a summarized, rendered, or truncated page is `partial` evidence at most | Mark values `TBD — verify` and record each source as `consulted`, `attempted`, or `not queried` |
 | Project file writes | Safely update the permitted document under the target root | Return the complete Markdown in conversation with the intended path and an explicit not-saved statement |
 
 Record verification and coverage with the
@@ -44,6 +44,9 @@ A shell, when available, is limited to commands that list or read files:
 
 - Allowed: listing and searching within the authorized root, such as `ls`,
   `find`, `grep`, `git ls-files`, and `git rev-parse HEAD`, and reading individual files as text.
+  Other git commands, such as `git status`, `git diff`, or `git log`, are not
+  discovery commands: commands that refresh the index can invoke a
+  repository-configured program such as a `core.fsmonitor` hook.
   Exclude [secret-bearing files](security.md#secret-bearing-files) from
   content searches and reads; listing their paths is enough.
 - Not allowed: package managers, build tools, and their wrappers (for example
