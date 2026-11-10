@@ -37,6 +37,8 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
     returned to the user.
   - `LICENSE`: byte-identical copy of the root license.
 - [validation/](validation/README.md): offline checks and acceptance scenarios.
+- [docs/](docs/stacks.md): user guides for [stacks](docs/stacks.md) and
+  [scaffold](docs/scaffold.md), and [installation](docs/INSTALLATION.md).
 - [docs/maintainers/](docs/maintainers/ARCHITECTURE.md): design and release process.
 
 ## Editing rules

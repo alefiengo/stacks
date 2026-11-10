@@ -39,6 +39,10 @@ version.
 
 ### Changed
 
+- Reorganized the README around the two-skill flow, with a diagram, a
+  combined install command, and an example; added user guides for `stacks`
+  and `scaffold`; merged the `scaffold` design record into the architecture
+  document.
 - Moved the runtime package to `skills/stacks/` (`SKILL.md`, `LICENSE`,
   `references/`, `templates/`) so installers copy only runtime files.
   Repository documentation, validation, and workflows stay at the repository

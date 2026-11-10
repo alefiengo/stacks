@@ -19,22 +19,28 @@ review your agent's permission settings before using it.
 
 ## Quick start
 
-From your application project, run:
+From your application project, install both skills:
+
+```bash
+npx skills add alefiengo/stacks --skill stacks scaffold
+```
+
+Or install only the one you need:
 
 ```bash
 npx skills add alefiengo/stacks --skill stacks
 npx skills add alefiengo/stacks --skill scaffold
 ```
 
-Run the commands you need. Select the target agents, then start a new session
-in that project. The
+Select the target agents, then start a new session in that project. The
 Skills CLI requires Node.js 22.20 or later. For installation without the CLI,
 use the [manual procedure](#manual-installation).
 
 ## Choose an agent
 
-Each command below installs into the current project. Replace `stacks` with
-`scaffold` after `--skill` to install the generator skill. Add `-g` for user scope.
+Each command below installs `stacks` into the current project. Use
+`--skill scaffold` for the generator skill, or `--skill stacks scaffold` for
+both. Add `-g` for user scope.
 By default the installer links each agent directory to a canonical copy of the
 skill; add `--copy` to create independent copies, for example where symlinks
 are not supported. A copy needs a new installation or update to receive changes.
