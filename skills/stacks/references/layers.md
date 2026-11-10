@@ -15,45 +15,50 @@ hosting target, and CI gates depend on quality tooling. Revisit affected
 decisions after any upstream change; the order is not a reason to freeze
 an incompatible choice.
 
-## Profile applicability matrix
+## Applicability
 
-Profiles: `api` (REST), `mcp` (MCP server), `gql` (GraphQL), `grpc` (gRPC
-service), `web` (web frontend), and `ms` (microservices system). **Y** means
-assess; **O** means conditional: decide or justify `N/A`. The matrix guides
-assessment rather than imposing unnecessary infrastructure. Combined profiles
-use the union of relevant needs, with ownership explicit for each component.
+**Always** means assess for every profile; **conditional** means decide or
+justify `N/A` from the rules below. Profiles include REST API, MCP server,
+GraphQL API, gRPC service, web frontend, and microservices. The table guides
+assessment rather than imposing unnecessary infrastructure.
 
-| Layer | api | mcp | gql | grpc | web | ms |
-|---|---|---|---|---|---|---|
-| L1 Language, runtime & package management | Y | Y | Y | Y | Y | Y |
-| L2 Framework and core libraries | Y | Y | Y | Y | Y | Y |
-| L3 Project structure and architecture | Y | Y | Y | Y | Y | Y |
-| L4 Code quality | Y | Y | Y | Y | Y | Y |
-| L5 Testing | Y | Y | Y | Y | Y | Y |
-| L6 Data | O | O | O | O | O | O |
-| L7 Authentication and authorization | O | O | O | O | O | O |
-| L8 Containerization and local environment | O | O | O | O | O | O |
-| L9 CI/CD | O | O | O | O | O | O |
-| L10 Deployment and infrastructure | O | O | O | O | O | O |
-| L11 Observability | Y | Y | Y | Y | Y | Y |
-| L12 Security | Y | Y | Y | Y | Y | Y |
+| Layer | Applicability |
+|---|---|
+| L1 Language, runtime and package management | always |
+| L2 Framework and core libraries | always |
+| L3 Project structure and architecture | always |
+| L4 Code quality | always |
+| L5 Testing | always |
+| L6 Data | conditional |
+| L7 Authentication and authorization | conditional |
+| L8 Containerization and local environment | conditional |
+| L9 CI/CD | conditional |
+| L10 Deployment and infrastructure | conditional |
+| L11 Observability | always |
+| L12 Security | always |
+
+Combined profiles and multi-component systems keep one L1–L12 table. When a
+component's choice differs, add a row labeled with the layer and component,
+such as `L2 (api)` and `L2 (web)`, beneath the shared layer row, and record
+the language per component. Outputs stay under the authorized root; write
+per-package documents only when requested.
 
 Applicability rules (retain all 12 rows; use `N/A` plus a reason when skipped):
 
 - **L6** — determine whether the system persists or reads shared state. Pure stdio
   MCP servers, thin proxies, and stateless BFFs often skip it. A frontend
   alone skips it (backend owns data).
-- **L7** — assess identities, trust boundaries, sensitive data and privileged
+- **L7** — assess identities, trust boundaries, sensitive data, and privileged
   actions even on localhost or an internal network. Network placement alone
   never justifies skipping auth. A public static site without protected data
   or actions can justify N/A; document any intentional deferral and its risk.
 - **L8** — services use local containers or managed dependencies by default.
-  Static hosting, local stdio tools and function platforms need not ship an
+  Static hosting, local stdio tools, and function platforms need not ship an
   application container. SSR frontends still need an appropriate runtime.
 - **L9/L10** — local-only prototypes may defer hosted CI or deployment; record
   scope and rationale rather than inventing a cloud platform or pipeline.
 - **L11/L12** — scale practices to the profile: a stdio MCP server must keep
-  protocol stdout clear and may log to stderr; HTTP endpoints, container scans
+  protocol stdout clear and may log to stderr; HTTP endpoints, container scans,
   and CORS are N/A when those surfaces do not exist. Security assessment remains
   relevant even when individual controls are not applicable.
 
@@ -62,10 +67,12 @@ Applicability rules (retain all 12 rows; use `N/A` plus a reason when skipped):
 ### L1 — Language, runtime and package management
 
 Decide: language (usually settled in Phase 1), runtime version policy (LTS
-lines preferred), package manager, build tool (Java: Gradle vs Maven),
-version manager (uv manages Python; fnm/volta for Node; SDKMAN/mise for JDK).
-Do not re-ask a pre-declared language or an organization-mandated build tool;
-record it as confirmed and still assess runtime/tool compatibility.
+lines preferred), package manager, build tool (Java: Gradle vs Maven), and
+version manager (uv manages Python; fnm or mise for Node; SDKMAN or mise for
+the JDK). In audits, verify the maintenance status of the observed version
+manager rather than assuming it. Do not re-ask a pre-declared language or an
+organization-mandated build tool; record it as confirmed and still assess
+runtime/tool compatibility.
 
 ### L2 — Framework and core libraries
 
@@ -78,14 +85,14 @@ available, otherwise use general criteria and permitted official evidence.
 ### L3 — Project structure and architecture
 
 Decide: architectural pattern (layered vs package-by-feature vs modular
-monolith), repo layout (src layout for Python; workspaces monorepo for
-Node when API+frontend or multi-service; standard layout, package-by-feature
-for larger Java apps). For microservices: monorepo vs repo-per-service plus
-a shared service template contract.
+monolith) and repo layout (src layout for Python; Node workspaces when shared
+tooling or coordinated releases justify them; standard layout and
+package-by-feature for larger Java apps). For microservices: monorepo vs
+repo-per-service plus a shared service template contract.
 
 ### L4 — Code quality
 
-Decide: linter, formatter and type checker appropriate to the framework.
+Decide: linter, formatter, and type checker appropriate to the framework.
 Local hooks are optional reinforcement; enforce required gates in CI.
 Choose a commit convention when it serves the release workflow. Most quality
 tools are settled categories — state contextual defaults, do not re-ask.
@@ -95,26 +102,29 @@ tools are settled categories — state contextual defaults, do not re-ask.
 Decide: runner (settled), the test pyramid scope (unit / integration / e2e),
 integration strategy (Testcontainers when a database or broker is involved;
 service containers in CI as alternative), coverage policy based on critical
-behavior and risk (a percentage alone does not establish test quality),
+behavior and risk (a percentage alone does not establish test quality), and
 fixtures/factories. Describe proposed checks; never report tests as executed
 without execution evidence.
 
 ### L6 — Data
 
 Decide in this order: engine (relational default — PostgreSQL; document,
-search, or ledger needs change this), hosting (managed — Cloud SQL on GCP —
-vs self-managed container in prod), ORM + driver, migrations tool (settled),
-cache (Redis only for a concrete shared cache, session, or coordination need),
-queues/workers (when background or scheduled work exists; choose by operational
-requirements), and blob storage (when files are in scope).
+search, or ledger needs change this), hosting (the selected platform's
+managed service, for example Cloud SQL on GCP, vs a self-managed container in
+production), ORM and driver, migrations tool (settled), cache (only for a
+concrete shared cache, session, or coordination need; verify the license of
+the selected engine and compare compatible alternatives), queues/workers (when
+background or scheduled work exists; choose by operational requirements), and
+blob storage (when files are in scope).
 
 ### L7 — Authentication and authorization
 
 Decide: trust boundaries and required identities, auth provider (OIDC via an
 established provider where applicable — never custom cryptographic protocols),
 token validation strategy (including JWKS and audiences where applicable),
-service-to-service identity, and browser session strategy. Assess Google-signed
-ID tokens and IAM when Cloud Run is selected; consider `HttpOnly` cookies to
+service-to-service identity, and browser session strategy. Assess the
+selected platform's workload identity and service-to-service token model (for
+example, Google-signed ID tokens on Cloud Run); consider `HttpOnly` cookies to
 reduce browser token exposure. Use the [security guide](security.md) for the
 full control requirements and protocol-specific limits.
 
@@ -123,9 +133,10 @@ full control requirements and protocol-specific limits.
 Decide: whether the target accepts an OCI container (default for suitable
 backend service hosting), base image policy (verified readable tag plus digest,
 multi-stage, non-root), local service catalog in compose (database, cache, etc.
-only when needed, with healthchecks), `.env.example` convention, devcontainer
-(only if asked). Mark unverified digests `TBD — verify`; never invent them.
-Document static/CDN, function and local stdio exceptions explicitly.
+only when needed, with healthchecks), `.env.example` convention, and
+devcontainer (only if asked). Mark unverified digests `TBD — verify`; never
+invent them. Document static/CDN, function, and local stdio exceptions
+explicitly.
 
 ### L9 — CI/CD
 
@@ -140,25 +151,32 @@ Choose dependency updates and protection rules for the host and team. Use the
 ### L10 — Deployment and infrastructure
 
 Decide: platform (settled in Phase 1 Q4), environment isolation, versioned
-infrastructure and recovery proportional to impact, repeatability and ownership.
-Preserve workable IaC standards; Terraform is a starting option when useful.
-Derive capacity, concurrency, connection budgets and instance bounds from the
-workload, latency and cost requirements; verify platform limits before choosing
-values. Include domain/TLS, worker lifecycle and rollback/migration behavior
-where relevant. Use the [deployment guide](deployment.md) for details.
+infrastructure, and recovery proportional to impact, repeatability, and
+ownership. Preserve workable IaC standards; for a new choice, compare IaC tools
+such as Terraform and OpenTofu and verify the current license of the selected
+release. Derive capacity, concurrency, connection budgets, and instance bounds
+from the workload, latency, and cost requirements; verify platform limits
+before choosing values. Include domain/TLS, worker lifecycle, and
+rollback/migration behavior where relevant. Use the
+[deployment guide](deployment.md) for details.
 
 ### L11 — Observability
 
 Decide: structured logging (JSON for applicable services, stderr for stdio
 protocols), metrics/tracing destinations and compatible instrumentation,
-optional error tracking, applicable health protocols, uptime checks and
+optional error tracking, applicable health protocols, uptime checks, and
 alerting. Scale to the operational need; do not prescribe HTTP health endpoints
 or tracing dependencies for every profile. Ask only unresolved material choices.
 
 ### L12 — Security
 
-Decide: secrets handling (local `.env` git-ignored; CI platform store; GCP
-Secret Manager at runtime), secret scanning (gitleaks), dependency scanning
-(per stack), container scanning (trivy), SAST (semgrep — optional), rate
-limiting and CORS posture. Apply the [security checklist](security.md) to the
-actual surfaces; selecting a tool does not establish that a control is enforced.
+Decide: secrets handling (local `.env` git-ignored; the CI platform's secret
+store; the selected platform's secret manager at runtime), secret scanning
+(for example, gitleaks or the git host's native scanning), dependency scanning
+(per stack), container scanning when containerized (for example, trivy, grype,
+or the platform's scanner), optional SAST (for example, semgrep; verify the
+license of the selected edition), rate limiting, and CORS posture. Pin scanner
+actions, binaries, and images to a commit SHA or digest, and run scanners
+without deployment credentials or production secrets. Apply the
+[security checklist](security.md) to the actual surfaces; selecting a tool does
+not establish that a control is enforced.

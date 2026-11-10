@@ -12,14 +12,20 @@ Jump to: [Runtime](#runtime-and-tooling) · [Profiles](#profile-rest-and-http-ap
 
 - **Node.js:** select a compatible supported LTS line after checking the official
   release schedule, framework engines, build tooling, and hosting platform.
-- Use fnm, Volta, or mise only when runtime switching is needed and supported
-  on the developer platform; preserve an existing workable team convention.
+- Use fnm or mise only when runtime switching is needed and supported on the
+  developer platform; preserve an existing workable team convention. When
+  auditing, verify the maintenance status of the version manager in use.
 - **pnpm** is the default for workspaces and dependency management; npm and
   Yarn are valid alternatives when compatible with the selected ecosystem.
   Commit the matching lockfile and make CI use frozen/immutable resolution.
+  Enable the [supply-chain controls](../security.md#dependency-and-supply-chain-scanning)
+  the selected package manager supports, such as install-script allowlists.
 - Prefer TypeScript strict checking. Decide ESM/CommonJS and build output from
   the target runtime and consumers; do not force ESM onto incompatible hosts.
   Use tsx, tsc, or a bundler according to development, library, or server needs.
+- Node's native type stripping can run erasable-only TypeScript where the
+  selected LTS line supports it. It neither type-checks nor reads `tsconfig.json`;
+  keep a separate type check and verify support in the selected release.
 
 ## Profile: REST and HTTP API
 
@@ -53,11 +59,13 @@ Jump to: [Runtime](#runtime-and-tooling) · [Profiles](#profile-rest-and-http-ap
   transport such as **Streamable HTTP** for remote clients. Verify the current
   protocol and SDK; legacy HTTP+SSE is distinct from SSE streaming within a
   newer transport.
-- For remote deployments, verify protocol authorization/discovery, client
-  compatibility, sessions, streaming, reconnects, and scaling. An arbitrary
-  OIDC proxy is not sufficient evidence that these requirements are met.
-  See [authentication and authorization](../security.md#authentication-and-authorization-l7)
-  and the [deployment guide](../deployment.md).
+- For remote or local HTTP deployments, verify protocol authorization/discovery,
+  `Origin` validation, loopback binding for local HTTP, no token passthrough,
+  sessions not used as authentication, client compatibility, streaming,
+  reconnects, and scaling. An arbitrary OIDC proxy is not sufficient evidence
+  that these requirements are met. See the
+  [MCP security requirements](../security.md#mcp-servers) and the
+  [deployment guide](../deployment.md).
 
 ## Profile: GraphQL API
 
@@ -94,7 +102,9 @@ Add persistence, caches, and workers only for an identified requirement.
 - Compare **Drizzle**, **Prisma**, **Kysely**, or an existing ORM by SQL control,
   schema/migration workflow, runtime, driver support, and domain needs.
   Migration plans must consider existing data and rollback/roll-forward safety.
-- Add **Redis** only for a concrete requirement. For jobs, compare **BullMQ**
+- Add **Redis** or a compatible server such as Valkey only for a concrete
+  requirement; verify the current license of the selected server and edition.
+  For jobs, compare **BullMQ**
   with a PostgreSQL-backed option such as **Graphile Worker** according to
   durability, retry, scheduling, and operational requirements.
 - Background workers need an explicit execution platform and idempotency;

@@ -3,8 +3,10 @@
 Define a technology stack or audit the one your project already uses.
 
 An agent skill for choosing coherent technologies and documenting architecture
-with rationale, evidence, and actionable recommendations. Works with Claude
-Code, Codex, Antigravity, OpenCode, pi, and other agents that load Markdown skills.
+with rationale, evidence, and actionable recommendations. Designed for Claude
+Code, Codex, Antigravity, OpenCode, pi, and other agents that load Markdown
+skills. Installation paths follow the Skills CLI reference; trials in each
+agent have not been recorded yet.
 
 ## Install
 
@@ -21,7 +23,9 @@ npx skills add alefiengo/stacks --skill stacks -a claude-code
 ```
 
 The optional Skills CLI installer requires Node.js 22.20 or later. Add `-g`
-for a user-wide installation. The skill itself is Markdown; you can also
+for a user-wide installation. By default it links each agent directory to a
+canonical copy; add `--copy` to copy the files instead. The skill itself is
+Markdown; you can also
 [install the files manually](docs/INSTALLATION.md#manual-installation).
 
 See the [installation guide](docs/INSTALLATION.md) for commands and paths for
@@ -46,8 +50,8 @@ Use stacks to audit this repository's technology stack and prioritize findings.
 
 The guided workflow asks one unresolved decision at a time. To delegate the
 choices, add: `Choose sensible defaults and complete the document autonomously.`
-Conversation follows your language; documents default to English unless you
-request another language. Existing decisions are preserved when updating files.
+Conversation follows your language; documents use the language you request,
+else an existing document's language, else English. Existing decisions are preserved when updating files.
 
 ## Coverage
 
@@ -64,7 +68,7 @@ produces documentation for development and deployment decisions.
 ## Documentation
 
 - [Installation](docs/INSTALLATION.md) — agent commands, paths, and manual setup.
-- [Skill workflow](SKILL.md) — modes and reference routing.
+- [Skill workflow](skills/stacks/SKILL.md) — modes and reference routing.
 - [Contributing](CONTRIBUTING.md) — maintenance and local validation.
 - [Changelog](CHANGELOG.md) — changes between releases.
 - [Security](SECURITY.md) — reporting a vulnerability.

@@ -15,9 +15,16 @@ Jump to: [Runtime](#runtime-and-build) · [Framework](#framework) ·
   runtime image together; the latest JDK may precede ecosystem support.
   Eclipse Temurin is a starting distribution, subject to platform requirements.
 - Use SDKMAN or mise only when supported and useful on the developer platform.
+  When auditing, verify the maintenance status of the version manager in use.
 - **Gradle with Kotlin DSL** is a starting choice; **Maven** is equally viable
-  when organization standards or team familiarity favor it. Commit and verify
-  the wrapper; select a supported compatible tool version.
+  when organization standards or team familiarity favor it. With no such
+  preference, choose Maven for conventional builds with little custom logic and
+  Gradle when custom build logic, many modules, or build caching justify it.
+  Commit and verify the wrapper; select a supported compatible tool version.
+- Make resolution reproducible: in Gradle, enable dependency locking
+  (`gradle.lockfile`) and dependency verification
+  (`gradle/verification-metadata.xml`); in Maven, pin versions through BOMs and
+  `dependencyManagement` and set a failing checksum policy for repositories.
 - Prefer framework dependency management/BOMs for coordinated dependencies.
   Record the managed versions; do not override them with independent latest
   artifacts without evidence of compatibility.
@@ -62,9 +69,10 @@ Jump to: [Runtime](#runtime-and-build) · [Framework](#framework) ·
   another language only when a documented required capability is unavailable;
   avoid unverified relative maturity claims.
 - Choose local stdio or a currently supported remote transport according to
-  client needs. Verify protocol authorization/discovery, streaming, sessions,
-  and scaling for remote deployments. See the
-  [security](../security.md#authentication-and-authorization-l7) and
+  client needs. For remote or local HTTP deployments, verify protocol
+  authorization/discovery, `Origin` validation, loopback binding for local HTTP,
+  no token passthrough, sessions not used as authentication, streaming, and
+  scaling. See the [MCP security requirements](../security.md#mcp-servers) and
   [deployment](../deployment.md) guidance. Local stdio uses process permissions
   and lifecycle rather than an HTTP container.
 
@@ -80,11 +88,14 @@ Add persistence, caches, and workers only for an identified requirement.
   code-generation needs. Other frameworks use their supported persistence
   integrations and dependency management.
 - Choose **Flyway** or **Liquibase** when migrations are needed; verify engine
-  support and framework integration. Avoid two tools owning the same schema.
+  support, framework integration, and the current license of the selected
+  edition. Avoid two tools owning the same schema.
 - DTO/entity mapping can be explicit or use **MapStruct** when complexity
   justifies code generation; validate annotation-processor/JDK compatibility.
-- Add caches, queues, or object storage only when justified. Jobs require
-  explicit execution, retries, idempotency, and operational ownership.
+- Add caches, queues, or object storage only when justified. For jobs, compare
+  a database-backed scheduler or queue with a message broker by durability,
+  throughput, ordering, and operational ownership; both need explicit execution,
+  retries, and idempotency. Verify maintenance before choosing a library.
 
 ## Testing
 
@@ -110,8 +121,10 @@ Add persistence, caches, and workers only for an identified requirement.
 
 ## Observability and deployment
 
-- Use framework-compatible structured logging; in Spring, SLF4J/Logback with
-  a compatible JSON encoder is an option. Redact secrets and sensitive fields.
+- Use framework-compatible structured logging. In Spring Boot, use its native
+  structured logging formats when the selected version supports them; add a
+  separate JSON encoder only for a missing requirement. Redact secrets and
+  sensitive fields.
 - In Spring, Micrometer/Actuator can provide metrics and health. For other
   frameworks choose supported equivalents; select compatible OpenTelemetry
   instrumentation and define collection destinations. Avoid duplicate agents

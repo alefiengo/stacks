@@ -10,5 +10,5 @@ scenario reviews, and actual agent exercises. State anything not verified.
 
 ## Compatibility
 
-Describe affected modes, references, templates, shared vocabularies, or
-installation behavior. Write "None" when no compatibility change applies.
+Describe affected modes, references, templates (under `skills/stacks/`),
+shared vocabularies, or installation behavior. Write "None" when no compatibility change applies.

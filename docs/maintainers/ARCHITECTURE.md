@@ -3,19 +3,30 @@
 `stacks` turns project requirements or repository evidence into technology
 stack documentation. It is a knowledge package, not an application generator.
 
+## Package layout
+
+The runtime lives in `skills/stacks/`: `SKILL.md`, `LICENSE`, `references/`,
+and `templates/`. The skill installer copies the whole skill directory into the
+user's project or user-level skill directory, so everything in it is installed.
+Keeping the runtime in its own directory means the installed package contains
+only runtime files; repository instructions, maintainer documentation,
+validation tools, and workflows stay at the repository root and are never
+copied. The directory name matches the skill `name`, and its `LICENSE` is a
+byte-identical copy of the root license so installed copies retain the notice.
+
 ## Resource boundaries
 
 | Resource | Responsibility | Loaded when |
 |---|---|---|
-| [SKILL.md](../../SKILL.md) | Activation, operating contract, modes, routing | Skill activation |
-| [Compatibility](../../references/compatibility.md) | Host capability contract and safe fallbacks | Host adaptation or missing capabilities |
-| [Interview](../../references/interview.md) | Missing requirements, guided decisions, release verification | Define mode |
-| [Layers](../../references/layers.md) | Twelve-layer inventory and applicability | Decisions or inventory |
-| [Decision criteria](../../references/decision-criteria.md) | Tradeoffs, health, support, compatibility | Recommendation or audit |
+| [SKILL.md](../../skills/stacks/SKILL.md) | Activation, operating contract, modes, routing | Skill activation |
+| [Compatibility](../../skills/stacks/references/compatibility.md) | Host capability contract, discovery limits, and safe fallbacks | Always, in both modes |
+| [Interview](../../skills/stacks/references/interview.md) | Missing requirements, guided decisions, release verification | Define mode |
+| [Layers](../../skills/stacks/references/layers.md) | Twelve-layer inventory and applicability | Decisions or inventory |
+| [Decision criteria](../../skills/stacks/references/decision-criteria.md) | Tradeoffs, health, support, compatibility | Recommendation or audit |
 | Language references | Contextual Python, TypeScript/Node, and Java defaults | Selected or inspected component |
-| [Deployment](../../references/deployment.md) and [security](../../references/security.md) | Cross-cutting operational decisions | Applicable layers |
-| [Audit guide](../../references/audit.md) | Inspection, evidence, severity, prioritized actions | Audit mode |
-| [Templates](../../templates/stack.md) | Output structure and rendering instructions | Writing project documents |
+| [Deployment](../../skills/stacks/references/deployment.md) and [security](../../skills/stacks/references/security.md) | Cross-cutting operational decisions | Applicable layers |
+| [Audit guide](../../skills/stacks/references/audit.md) | Inspection, evidence, severity, prioritized actions | Audit mode |
+| [Templates](../../skills/stacks/templates/stack.md) | Output structure and rendering instructions | Writing project documents |
 | [Validation](../../validation/README.md) | Repository checks and acceptance scenarios | Maintainer work |
 
 References are loaded on demand. The entry point should route rather than
@@ -46,10 +57,12 @@ repository and are separate from the installed skill's project workflow.
 
 ## Shared contracts
 
-The skill and both templates retain L1–L12 in their summary inventories.
-Applicability is contextual: mark an irrelevant layer N/A and explain why.
-Decision status, inventory health, finding severity, and control status have
-different meanings; use their canonical definitions instead of merging them.
+The layer reference and both templates retain L1–L12. Applicability is
+contextual: mark an irrelevant layer N/A and explain why. The shared
+vocabularies are decision status, inventory health, finding severity,
+verification state, and security-control status. They have different meanings;
+use their canonical definitions (in decision criteria, the audit guide, and
+security guidance) instead of merging them.
 
 Guided checkpoints require an explicit reply unless prior authorization
 already covers the choice and writing. Unknown facts remain unknown even

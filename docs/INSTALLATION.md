@@ -20,6 +20,9 @@ use the [manual procedure](#manual-installation).
 ## Choose an agent
 
 Each command below installs into the current project. Add `-g` for user scope.
+By default the installer links each agent directory to a canonical copy of the
+skill; add `--copy` to create independent copies, for example where symlinks
+are not supported. A copy needs a new installation or update to receive changes.
 
 ### Claude Code
 
@@ -64,7 +67,8 @@ Agent identifiers and destinations follow the
 
 ## Installation paths
 
-The installer places `stacks/` under these directories:
+The installer places `stacks/` under these directories (a link to the
+canonical copy by default, or a copy with `--copy`):
 
 | Agent | Project directory | User directory (`-g`) |
 |---|---|---|
@@ -119,7 +123,18 @@ No installer runtime is needed for file copying:
 
 2. Create a `stacks/` directory under your agent's
    [project or user skill directory](#installation-paths).
-3. Copy these entries from the downloaded repository into it:
+3. Copy the contents of the repository's `skills/stacks/` directory into it.
+   From the directory that contains `stacks-source`, set `DEST` to the
+   destination from the [paths table](#installation-paths) (the example is a
+   Codex project installation) and run:
+
+   ```bash
+   DEST=/path/to/application-project/.agents/skills/stacks
+   mkdir -p "$DEST"
+   cp -R stacks-source/skills/stacks/. "$DEST"/
+   ```
+
+   The installed directory contains:
 
    ```text
    stacks/
@@ -129,11 +144,12 @@ No installer runtime is needed for file copying:
    └── templates/
    ```
 
-4. Keep the complete contents of both directories. Review an existing
+4. Keep the complete contents of the directory. Review an existing
    installation before replacing files, then start a new agent session.
 
-The skill adds no application dependencies. Maintainer scripts and repository
-configuration are not needed in the installed package.
+The `skills/stacks/` directory holds only the runtime package. The skill adds
+no application dependencies; maintainer scripts, repository instructions, and
+configuration at the repository root are not part of the installed package.
 
 ## Manage the installation
 
@@ -156,8 +172,8 @@ and [command reference](https://github.com/vercel-labs/skills/blob/main/docs/com
 
 - **Skill not found:** check the project, selected agent, installation scope,
   and SKILL.md location; start a new session after installing.
-- **Reference not found:** restore the complete references and templates
-  directories. SKILL.md alone is not the full package.
+- **Reference not found:** restore the complete `references/` and `templates/`
+  directories from `skills/stacks/`. SKILL.md alone is not the full package.
 - **Document not saved:** allow writes to the target project or use the full
   Markdown returned in the conversation.
 - **Versions pending:** permit the relevant official sources when appropriate

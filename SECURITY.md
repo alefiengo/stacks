@@ -24,10 +24,15 @@ reported through the normal issue or contribution workflow.
 
 ## Report safely
 
-Use the repository's private vulnerability-reporting feature if it is enabled.
-If no private reporting route is available, open a minimal issue requesting
-private coordination. State the general category and affected revision, and
-agree on a private channel before sharing sensitive details.
+Report privately through GitHub's
+[private vulnerability reporting](https://github.com/alefiengo/stacks/security/advisories/new).
+If that form is unavailable, open a minimal public issue requesting private
+coordination without technical details. State only the general category and
+affected revision, and agree on a private channel before sharing sensitive
+details.
+
+The project does not promise a response time. The supported revision is the
+latest commit on `main`; no releases have been published.
 
 Do not put credentials, private code, customer data, exploitable details about
 a live system or actual personal configuration paths in a public issue.
