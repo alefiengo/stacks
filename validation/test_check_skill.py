@@ -1,6 +1,6 @@
 """Exercise validator failure paths using disposable in-repository fixtures.
 
-Most tests build a small synthetic package from the validator's own file
+Most tests build small synthetic packages from the validator's own file
 enumeration, so they do not depend on the wording of the real documents. One
 test copies the real repository through the same enumeration and validates it.
 """
@@ -15,8 +15,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from check_skill import (
-    DEPENDABOT, LAYER_FILES, LAYERS, PACKAGE, PORTABILITY_SCENARIOS, REQUIRED_FILES,
-    ROOT, RUNTIME_RESOURCES, SCENARIOS, SKILL, TEMPLATES, WORKFLOW, Validator, main,
+    DEPENDABOT, INPUT_CONTRACT, LAYER_FILES, LAYERS, PACKAGES, PORTABILITY_SCENARIOS,
+    REQUIRED_FILES, ROOT, RUNTIME_RESOURCES, SCAFFOLD, SCAFFOLD_SCENARIOS, SCAFFOLD_SKILL,
+    SCENARIOS, SHARED_BLOCKS, SKILLS_DIR, STACK_FIELDS, STACK_TEMPLATE, STACKS, STACKS_SKILL,
+    WORKFLOW, Validator, main,
 )
 
 COPIED_FROM_REPOSITORY = {WORKFLOW, DEPENDABOT}
@@ -26,39 +28,57 @@ SYNTHETIC_LICENSE = (
     'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.\n'
 )
 UNPRIVILEGED = getattr(os, 'geteuid', lambda: 0)() != 0
+SHARED_NAME, (SHARED_STACKS, SHARED_SCAFFOLD) = next(iter(SHARED_BLOCKS.items()))
+SHARED_START = f'<!-- shared:{SHARED_NAME}:start -->'
+SHARED_END = f'<!-- shared:{SHARED_NAME}:end -->'
+SHARED_TEXT = f'{SHARED_START}\n- Synthetic shared rule.\n{SHARED_END}\n'
+SCAFFOLD_TEMPLATE = f'{SCAFFOLD}/templates/scaffold-report.md'
+SCAFFOLD_SCENARIO_MESSAGE = ('Scaffold scenarios must be contiguous from SC01 and include '
+                             f'SC01..{SCAFFOLD_SCENARIOS[-1]}')
 
 
-def synthetic_skill():
+def synthetic_skill(name):
+    prefix = f'{SKILLS_DIR}/{name}'
     routes = '\n'.join(
-        f'- [{Path(relative).stem}]({Path(relative).relative_to(PACKAGE).as_posix()})'
-        for relative in RUNTIME_RESOURCES
+        f'- [{Path(relative).stem}]({Path(relative).relative_to(prefix).as_posix()})'
+        for relative in RUNTIME_RESOURCES if relative.startswith(f'{prefix}/')
     )
     return (
-        '---\nname: stacks\nlicense: MIT\ndescription: >\n'
+        f'---\nname: {name}\nlicense: MIT\ndescription: >\n'
         '  Synthetic skill description for validator tests.\n---\n\n'
-        f'# Stacks\n\n## Routing\n\n{routes}\n'
+        f'# {name.title()}\n\n## Routing\n\n{routes}\n'
     )
 
 
 def synthetic_text(relative):
     """Return minimal valid content for one required or runtime file."""
-    if relative == SKILL:
-        return synthetic_skill()
+    parts = Path(relative).parts
+    if len(parts) == 3 and parts[0] == SKILLS_DIR and parts[2] == 'SKILL.md':
+        return synthetic_skill(parts[1])
     if relative.endswith('LICENSE'):
         return SYNTHETIC_LICENSE
     if relative == 'README.md':
         return '# Fixture\n\nRead the [license](LICENSE).\n'
     if relative == 'validation/README.md':
         rows = '\n'.join(f'| {identifier} | Synthetic |' for identifier in SCENARIOS)
+        scaffold = '\n'.join(f'| {identifier} | Synthetic |' for identifier in SCAFFOLD_SCENARIOS)
         hosts = '\n'.join(f'| {identifier} | Synthetic |' for identifier in PORTABILITY_SCENARIOS)
         return (f'# Validation\n\n| ID | Scenario |\n| --- | --- |\n{rows}\n\n'
+                f'## Scaffold\n\n| ID | Scenario |\n| --- | --- |\n{scaffold}\n\n'
                 f'## Portability\n\n| ID | Host |\n| --- | --- |\n{hosts}\n')
+    template = len(parts) > 3 and parts[0] == SKILLS_DIR and parts[2] == 'templates'
+    placeholder = '\nProject: {{project_name}}.\n' if template else ''
     if relative in LAYER_FILES:
         rows = '\n'.join(f'| {layer} | Synthetic |' for layer in LAYERS)
-        placeholder = '\nProject: {{project_name}}.\n' if relative in TEMPLATES else ''
-        return f'# Layers\n\n| Layer | Choice |\n| --- | --- |\n{rows}\n{placeholder}'
+        fields = '\n\n'.join(STACK_FIELDS) + '\n' if relative == STACK_TEMPLATE else ''
+        return f'# Layers\n\n| Layer | Choice |\n| --- | --- |\n{rows}\n{placeholder}\n{fields}'
+    if relative == INPUT_CONTRACT:
+        fields = '\n'.join(f'- `{field}`' for field in STACK_FIELDS)
+        return f'# Input contract\n\n{fields}\n'
+    if relative in (SHARED_STACKS, SHARED_SCAFFOLD):
+        return f'# {Path(relative).stem}\n\n{SHARED_TEXT}'
     if relative.endswith('.md'):
-        return f'# {Path(relative).stem}\n\nSynthetic fixture text.\n'
+        return f'# {Path(relative).stem}\n\nSynthetic fixture text.\n{placeholder}'
     return 'synthetic fixture\n'
 
 
@@ -107,7 +127,10 @@ class FixtureTestCase(unittest.TestCase):
 
 class RepositoryTests(FixtureTestCase):
     def test_current_package_passes(self):
-        for relative in Validator(ROOT).inventory():
+        inventory = Validator(ROOT).inventory()
+        missing = [relative for relative in inventory if not (ROOT / relative).exists()]
+        self.assertEqual(missing, [], 'Required repository files are not written yet')
+        for relative in inventory:
             source = ROOT / relative
             self.assertTrue(source.is_file() and not source.is_symlink(), relative)
             destination = self.root / relative
@@ -160,12 +183,12 @@ class ValidatorTests(FixtureTestCase):
         self.assert_invalid(f'Resource is not valid UTF-8: {WORKFLOW}')
 
     def test_byte_order_mark_has_its_own_message(self):
-        path = self.root / SKILL
+        path = self.root / STACKS_SKILL
         path.write_bytes(b'\xef\xbb\xbf' + path.read_bytes())
-        self.assertEqual(self.errors(), [f'Byte order mark in {SKILL}'])
+        self.assertEqual(self.errors(), [f'Byte order mark in {STACKS_SKILL}'])
 
     def test_crlf_has_its_own_message(self):
-        for relative in (SKILL, WORKFLOW):
+        for relative in (STACKS_SKILL, WORKFLOW):
             with self.subTest(relative=relative):
                 build_fixture(self.root)
                 path = self.root / relative
@@ -182,7 +205,7 @@ class ValidatorTests(FixtureTestCase):
         self.assert_invalid('Cannot list directory: private')
 
     def test_symlinked_directory_is_not_walked(self):
-        (self.root / 'linked').symlink_to(self.root / PACKAGE / 'references', target_is_directory=True)
+        (self.root / 'linked').symlink_to(self.root / STACKS / 'references', target_is_directory=True)
         self.assert_invalid('Symlinked directory is not distributable: linked')
 
     def test_markdown_extension_and_nested_build_folder_are_discovered(self):
@@ -203,16 +226,16 @@ class ValidatorTests(FixtureTestCase):
     # Markdown hygiene
 
     def test_missing_runtime_resource_fails(self):
-        (self.root / PACKAGE / 'references/security.md').unlink()
-        message = f'Missing or unsafe resource: {PACKAGE}/references/security.md'
+        (self.root / STACKS / 'references/security.md').unlink()
+        message = f'Missing or unsafe resource: {STACKS}/references/security.md'
         errors = self.assert_invalid(message)
         self.assertEqual(errors.count(message), 1, errors)
 
     def test_external_resource_symlink_is_rejected(self):
-        path = self.root / PACKAGE / 'references/security.md'
+        path = self.root / STACKS / 'references/security.md'
         path.unlink()
         path.symlink_to('../../../../missing-security.md')
-        errors = self.assert_invalid(f'Missing or unsafe resource: {PACKAGE}/references/security.md')
+        errors = self.assert_invalid(f'Missing or unsafe resource: {STACKS}/references/security.md')
         self.assertFalse(any('Unsafe Markdown resource' in error for error in errors), errors)
 
     def test_symlink_loop_is_reported_without_crashing(self):
@@ -269,32 +292,32 @@ class ValidatorTests(FixtureTestCase):
     # Frontmatter
 
     def test_missing_frontmatter_fails(self):
-        self.replace(SKILL, '---\n', 'not-frontmatter\n')
+        self.replace(STACKS_SKILL, '---\n', 'not-frontmatter\n')
         self.assert_invalid('Missing or malformed skill frontmatter')
 
     def test_folded_strip_description_is_accepted(self):
-        self.replace(SKILL, 'description: >\n', 'description: >-\n')
+        self.replace(STACKS_SKILL, 'description: >\n', 'description: >-\n')
         validator = Validator(self.root).run()
         self.assertEqual(validator.errors, [])
-        self.assertEqual(validator.metadata['description'],
+        self.assertEqual(validator.metadata['stacks']['description'],
                          'Synthetic skill description for validator tests.')
 
     def test_blank_line_in_folded_description_is_rejected(self):
-        self.replace(SKILL, '  Synthetic', '\n  Synthetic')
+        self.replace(STACKS_SKILL, '  Synthetic', '\n  Synthetic')
         self.assert_invalid('Blank line in the folded description on line 5')
 
     def test_frontmatter_errors_do_not_dump_values(self):
         marker = 'synthetic-metadata-value-that-must-not-be-printed'
-        self.replace(SKILL, 'name: stacks', marker)
+        self.replace(STACKS_SKILL, 'name: stacks', marker)
         errors = self.assert_invalid('Unsupported frontmatter syntax on line 2')
         self.assertNotIn(marker, '\n'.join(errors))
 
     def test_duplicate_frontmatter_key_fails(self):
-        self.replace(SKILL, 'name: stacks\n', 'name: stacks\nname: stacks\n')
-        self.assert_invalid('Duplicate frontmatter key: name')
+        self.replace(STACKS_SKILL, 'name: stacks\n', 'name: stacks\nname: stacks\n')
+        self.assert_invalid(f'Duplicate frontmatter key: name in {STACKS_SKILL}')
 
     def test_unknown_frontmatter_key_fails(self):
-        self.replace(SKILL, 'license: MIT\n', 'license: MIT\nversion: one\n')
+        self.replace(STACKS_SKILL, 'license: MIT\n', 'license: MIT\nversion: one\n')
         self.assert_invalid('Unsupported frontmatter key on line 4')
 
     def test_unsupported_frontmatter_scalars_fail(self):
@@ -308,24 +331,24 @@ class ValidatorTests(FixtureTestCase):
         for old, new in cases:
             with self.subTest(new=new):
                 build_fixture(self.root)
-                self.replace(SKILL, old, new)
+                self.replace(STACKS_SKILL, old, new)
                 self.assert_invalid('Unsupported frontmatter')
 
     def test_skill_name_must_match_directory(self):
-        self.replace(SKILL, 'name: stacks', 'name: stack')
-        self.assert_invalid('Skill name must equal its directory name')
+        self.replace(STACKS_SKILL, 'name: stacks', 'name: stack')
+        self.assert_invalid(f'Skill name must equal its directory name: {STACKS_SKILL}')
 
     def test_description_length_is_bounded(self):
-        self.replace(SKILL, '  Synthetic', '  ' + 'a' * 1025 + '\n  Synthetic')
+        self.replace(STACKS_SKILL, '  Synthetic', '  ' + 'a' * 1025 + '\n  Synthetic')
         self.assert_invalid('Description must be 1..1024 characters')
 
     def test_license_mismatch_fails(self):
-        self.replace(SKILL, 'license: MIT', 'license: unapproved')
-        self.assert_invalid('Frontmatter license must be MIT')
+        self.replace(STACKS_SKILL, 'license: MIT', 'license: unapproved')
+        self.assert_invalid(f'Frontmatter license must be MIT: {STACKS_SKILL}')
 
     def test_core_workflow_line_budget(self):
-        self.append(SKILL, '\nLine.\n' * 130)
-        self.assert_invalid('Core workflow exceeds its 250-line budget')
+        self.append(STACKS_SKILL, '\nLine.\n' * 130)
+        self.assert_invalid(f'Core workflow exceeds its 250-line budget: {STACKS_SKILL}')
 
     # License and package contents
 
@@ -337,22 +360,22 @@ class ValidatorTests(FixtureTestCase):
         self.assert_invalid('LICENSE must retain the permission and disclaimer text')
 
     def test_packaged_license_must_match_root_license(self):
-        self.append(f'{PACKAGE}/LICENSE', 'Extra term.\n')
-        self.assert_invalid(f'{PACKAGE}/LICENSE must be identical to LICENSE')
+        self.append(f'{STACKS}/LICENSE', 'Extra term.\n')
+        self.assert_invalid(f'{STACKS}/LICENSE must be identical to LICENSE')
 
     def test_obsolete_license_draft_fails(self):
         self.write('LICENSE.proposed', 'draft\n')
         self.assert_invalid('Remove the obsolete adopted license draft')
 
     def test_package_rejects_extra_top_level_entries(self):
-        (self.root / PACKAGE / 'scripts').mkdir()
-        self.assert_invalid(f'{PACKAGE} must contain only SKILL.md, LICENSE, references/, and templates/')
+        (self.root / STACKS / 'scripts').mkdir()
+        self.assert_invalid(f'{STACKS} must contain only SKILL.md, LICENSE, references/, and templates/')
 
     def test_package_rejects_unlisted_files_without_opening_them(self):
-        self.write(f'{PACKAGE}/references/notes.txt', 'maintenance notes\n')
-        self.write(f'{PACKAGE}/templates/.env', 'synthetic test data\n')
-        self.assert_invalid(f'Unexpected file in the installed package: {PACKAGE}/references/notes.txt')
-        self.assert_invalid(f'Unexpected file in the installed package: {PACKAGE}/templates/.env')
+        self.write(f'{STACKS}/references/notes.txt', 'maintenance notes\n')
+        self.write(f'{STACKS}/templates/.env', 'synthetic test data\n')
+        self.assert_invalid(f'Unexpected file in the installed package: {STACKS}/references/notes.txt')
+        self.assert_invalid(f'Unexpected file in the installed package: {STACKS}/templates/.env')
 
     # Links
 
@@ -472,16 +495,16 @@ class ValidatorTests(FixtureTestCase):
 
     def test_routing_requires_a_visible_link(self):
         link = '](references/security.md)'
-        self.replace(SKILL, link, '] references/security.md')
-        self.append(SKILL, f'\n<!-- [Security]{link} -->\n\n```text\n[Security]{link}\n```\n')
-        self.assert_invalid(f'Runtime resource is not routed from SKILL.md: {PACKAGE}/references/security.md')
+        self.replace(STACKS_SKILL, link, '] references/security.md')
+        self.append(STACKS_SKILL, f'\n<!-- [Security]{link} -->\n\n```text\n[Security]{link}\n```\n')
+        self.assert_invalid(f'Runtime resource is not routed from SKILL.md: {STACKS}/references/security.md')
 
     def test_readme_license_link_must_be_visible(self):
         self.write('README.md', '# Fixture\n\n<!-- [license](LICENSE) -->\n')
         self.assert_invalid('README must link the active license')
 
     def test_layer_inventory_is_exact(self):
-        relative = f'{PACKAGE}/templates/stack.md'
+        relative = f'{STACKS}/templates/stack.md'
         self.replace(relative, '| L12 |', '| Removed |')
         self.assert_invalid(f'Layer inventory must contain L1..L12 exactly once: {relative}')
         build_fixture(self.root)
@@ -489,12 +512,12 @@ class ValidatorTests(FixtureTestCase):
         self.assert_invalid(f'Layer inventory must contain L1..L12 exactly once: {relative}')
 
     def test_ambiguous_template_placeholder_fails(self):
-        relative = f'{PACKAGE}/templates/stack.md'
+        relative = f'{STACKS}/templates/stack.md'
         self.append(relative, '\n{{...}}\n')
         self.assert_invalid(f'Template placeholders must be descriptive snake_case: {relative}')
 
     def test_contradictory_wording_fails(self):
-        self.append(f'{PACKAGE}/references/stacks/java.md', '\nUse JUnit 5.\n')
+        self.append(f'{STACKS}/references/stacks/java.md', '\nUse JUnit 5.\n')
         self.assert_invalid('Known contradictory wording returned: junit 5')
 
     def test_acceptance_scenarios_are_contiguous(self):
@@ -515,6 +538,139 @@ class ValidatorTests(FixtureTestCase):
     def test_portability_scenarios_are_exact(self):
         self.replace('validation/README.md', '| U08 |', '| Removed |')
         self.assert_invalid('Portability scenarios must list U01..U08 exactly once and in order')
+
+    # Package set and per-package rules
+
+    def test_skills_directory_must_hold_exactly_the_packages(self):
+        message = f'{SKILLS_DIR}/ must contain exactly the packages: {", ".join(PACKAGES)}'
+        (self.root / SKILLS_DIR / 'draft').mkdir()
+        self.assert_invalid(message)
+        (self.root / SKILLS_DIR / 'draft').rmdir()
+        shutil.rmtree(self.root / SCAFFOLD)
+        self.assert_invalid(message)
+
+    def test_missing_scaffold_resource_fails(self):
+        (self.root / SCAFFOLD / 'references/verification.md').unlink()
+        self.assert_invalid(f'Missing or unsafe resource: {SCAFFOLD}/references/verification.md')
+
+    def test_scaffold_frontmatter_is_validated(self):
+        cases = (
+            ('---\n', 'not-frontmatter\n', f'Missing or malformed skill frontmatter: {SCAFFOLD_SKILL}'),
+            ('name: scaffold', 'name: stacks', f'Skill name must equal its directory name: {SCAFFOLD_SKILL}'),
+            ('license: MIT', 'license: unapproved', f'Frontmatter license must be MIT: {SCAFFOLD_SKILL}'),
+            ('## Routing', '## Routing\n' + 'Line.\n' * 250,
+             f'Core workflow exceeds its 250-line budget: {SCAFFOLD_SKILL}'),
+        )
+        for old, new, message in cases:
+            with self.subTest(message=message):
+                build_fixture(self.root)
+                self.replace(SCAFFOLD_SKILL, old, new)
+                self.assert_invalid(message)
+
+    def test_scaffold_license_must_match_root_license(self):
+        self.append(f'{SCAFFOLD}/LICENSE', 'Extra term.\n')
+        self.assert_invalid(f'{SCAFFOLD}/LICENSE must be identical to LICENSE')
+
+    def test_scaffold_package_rejects_extra_entries_and_files(self):
+        self.write(f'{SCAFFOLD}/README.md', '# Notes\n')
+        self.write(f'{SCAFFOLD}/references/notes.txt', 'maintenance notes\n')
+        self.assert_invalid(f'{SCAFFOLD} must contain only SKILL.md, LICENSE, references/, and templates/')
+        self.assert_invalid(f'Unexpected file in the installed package: {SCAFFOLD}/README.md')
+        self.assert_invalid(f'Unexpected file in the installed package: {SCAFFOLD}/references/notes.txt')
+
+    def test_discovered_package_markdown_must_be_routed(self):
+        relative = f'{SCAFFOLD}/references/extra.md'
+        self.write(relative, '# Extra\n')
+        self.assert_invalid(f'Runtime resource is not routed from SKILL.md: {relative}')
+        self.append(SCAFFOLD_SKILL, '- [extra](references/extra.md)\n')
+        self.assert_valid()
+
+    def test_scaffold_routing_requires_a_visible_link(self):
+        link = '](references/execution-safety.md)'
+        self.replace(SCAFFOLD_SKILL, link, '] references/execution-safety.md')
+        self.append(SCAFFOLD_SKILL, f'\n<!-- [Safety]{link} -->\n')
+        self.assert_invalid(
+            f'Runtime resource is not routed from SKILL.md: {SCAFFOLD}/references/execution-safety.md')
+
+    def test_scaffold_templates_need_snake_case_placeholders(self):
+        message = f'Template placeholders must be descriptive snake_case: {SCAFFOLD_TEMPLATE}'
+        self.append(SCAFFOLD_TEMPLATE, '\n{{Report Name}}\n')
+        self.assert_invalid(message)
+        build_fixture(self.root)
+        self.replace(SCAFFOLD_TEMPLATE, '{{project_name}}', 'project name')
+        self.assert_invalid(message)
+        build_fixture(self.root)
+        relative = f'{SCAFFOLD}/templates/extra.md'
+        self.write(relative, '# Extra\n')
+        self.append(SCAFFOLD_SKILL, '- [extra](templates/extra.md)\n')
+        self.assert_invalid(f'Template placeholders must be descriptive snake_case: {relative}')
+
+    def test_contradictory_wording_in_scaffold_fails(self):
+        self.append(f'{SCAFFOLD}/references/stacks/python.md', '\nRun postgres:17 locally.\n')
+        self.assert_invalid('Known contradictory wording returned: postgres:17')
+
+    # Contracts between packages
+
+    def test_shared_block_must_appear_exactly_once(self):
+        for relative in (SHARED_STACKS, SHARED_SCAFFOLD):
+            message = f'Shared block {SHARED_NAME} must appear exactly once: {relative}'
+            cases = (
+                (SHARED_START + '\n', ''),
+                (SHARED_END + '\n', ''),
+                (SHARED_TEXT, SHARED_TEXT + '\n' + SHARED_TEXT),
+                (SHARED_TEXT, SHARED_TEXT.replace(SHARED_START, '@').replace(SHARED_END, SHARED_START)
+                 .replace('@', SHARED_END)),
+                (SHARED_START, f'  {SHARED_START}'),
+            )
+            for old, new in cases:
+                with self.subTest(relative=relative, new=new):
+                    build_fixture(self.root)
+                    self.replace(relative, old, new)
+                    self.assert_invalid(message)
+
+    def test_shared_block_must_be_identical(self):
+        message = f'Shared block {SHARED_NAME} differs between {SHARED_STACKS} and {SHARED_SCAFFOLD}'
+        for new in ('- Synthetic shared rules.', '- Synthetic shared rule. ', '- Synthetic shared rule.\n'):
+            with self.subTest(new=new):
+                build_fixture(self.root)
+                self.replace(SHARED_SCAFFOLD, '- Synthetic shared rule.', new)
+                self.assert_invalid(message)
+
+    def test_text_outside_shared_block_may_differ(self):
+        self.append(SHARED_SCAFFOLD, '\nScaffold-only guidance.\n')
+        self.assert_valid()
+
+    def test_stack_template_keeps_fields_read_by_scaffold(self):
+        field = '| Execution status |'
+        message = f'Field read by scaffold is missing from {STACK_TEMPLATE}: {field}'
+        self.replace(STACK_TEMPLATE, field, '| Run status |')
+        self.assert_invalid(message)
+        self.append(STACK_TEMPLATE, f'\n<!-- {field} -->\n')
+        self.assert_invalid(message)
+
+    def test_input_contract_names_fields_read_by_scaffold(self):
+        field = STACK_FIELDS[-1]
+        self.replace(INPUT_CONTRACT, field, 'Open decisions')
+        self.assert_invalid(f'Field read by scaffold is not named in {INPUT_CONTRACT}: {field}')
+
+    def test_scaffold_scenarios_are_contiguous(self):
+        cases = (
+            (f'| {SCAFFOLD_SCENARIOS[-1]} |', '| Removed |'),
+            (f'| {SCAFFOLD_SCENARIOS[-1]} | Synthetic |',
+             f'| {SCAFFOLD_SCENARIOS[-1]} | Synthetic |\n| SC{len(SCAFFOLD_SCENARIOS) + 2:02} | Gap |'),
+            (f'| {SCAFFOLD_SCENARIOS[-1]} | Synthetic |',
+             f'| {SCAFFOLD_SCENARIOS[-1]} | Synthetic |\n| {SCAFFOLD_SCENARIOS[0]} | Duplicate |'),
+        )
+        for old, new in cases:
+            with self.subTest(new=new):
+                build_fixture(self.root)
+                self.replace('validation/README.md', old, new)
+                errors = self.assert_invalid(SCAFFOLD_SCENARIO_MESSAGE)
+                self.assertFalse(any('Acceptance scenarios' in error for error in errors), errors)
+
+    def test_appended_scaffold_scenario_passes(self):
+        self.append('validation/README.md', f'\n| SC{len(SCAFFOLD_SCENARIOS) + 1:02} | Appended |\n')
+        self.assert_valid()
 
     # Workflow and Dependabot policy
 
@@ -623,16 +779,18 @@ class ValidatorTests(FixtureTestCase):
         status, stdout, stderr = self.run_main(self.root)
         self.assertEqual((status, stderr), (0, ''))
         size = len('Synthetic skill description for validator tests.')
-        self.assertRegex(stdout, rf'\AFrontmatter: stacks, MIT, description {size} characters\n'
+        self.assertRegex(stdout, rf'\AFrontmatter: scaffold, MIT, description {size} characters\n'
+                                 rf'Frontmatter: stacks, MIT, description {size} characters\n'
                                  r'PASS: \d+ static checks across \d+ Markdown files\n'
                                  r'No network, package installation, project execution, '
                                  r'or agent behavior certification\.\n\Z')
 
     def test_main_reports_failures(self):
-        self.replace(SKILL, 'license: MIT', 'license: unapproved')
+        self.replace(STACKS_SKILL, 'license: MIT', 'license: unapproved')
         status, stdout, stderr = self.run_main(self.root)
         self.assertEqual((status, stdout), (1, ''))
-        self.assertRegex(stderr, r'\AFAIL: Frontmatter license must be MIT\n1 failures / \d+ checks\n\Z')
+        self.assertRegex(stderr, rf'\AFAIL: Frontmatter license must be MIT: {STACKS_SKILL}\n'
+                                 r'1 failures / \d+ checks\n\Z')
 
 
 if __name__ == '__main__':

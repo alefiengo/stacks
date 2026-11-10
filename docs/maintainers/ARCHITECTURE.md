@@ -1,20 +1,46 @@
 # Skill architecture
 
-`stacks` turns project requirements or repository evidence into technology
-stack documentation. It is a knowledge package, not an application generator.
+The repository hosts two skills with different execution contracts.
+
+- `stacks` turns project requirements or repository evidence into technology
+  stack documentation. It is a knowledge package, not an application
+  generator: it never executes project commands or installs packages.
+- `scaffold` executes an approved plan derived from `docs/stack.md` and
+  generates a minimal project skeleton: it runs generators and package
+  managers, configures lint, tests, and CI, and verifies the result. Version 1
+  covers Python and TypeScript. It chooses no technologies, never commits,
+  pushes, or deploys, and builds a container image locally only when the
+  approved plan names it. The approved
+  [design](SCAFFOLD-DESIGN.md) records the decisions.
+
+The sections below describe `stacks` unless they name `scaffold`.
 
 ## Package layout
 
-The runtime lives in `skills/stacks/`: `SKILL.md`, `LICENSE`, `references/`,
-and `templates/`. The skill installer copies the whole skill directory into the
-user's project or user-level skill directory, so everything in it is installed.
-Keeping the runtime in its own directory means the installed package contains
-only runtime files; repository instructions, maintainer documentation,
-validation tools, and workflows stay at the repository root and are never
-copied. The directory name matches the skill `name`, and its `LICENSE` is a
-byte-identical copy of the root license so installed copies retain the notice.
+Each skill is packaged separately. The `stacks` runtime lives in
+`skills/stacks/`: `SKILL.md`, `LICENSE`, `references/`, and `templates/`. The
+`scaffold` runtime lives in `skills/scaffold/`: `SKILL.md`, `LICENSE`,
+`references/` (input contract, execution safety, verification, and a guide per
+language under `references/stacks/`), and `templates/` (the report). The skill
+installer copies one whole skill directory into the user's project or
+user-level skill directory, so everything in it is installed. Keeping each
+runtime in its own directory means an installed package contains only runtime
+files; repository instructions, maintainer documentation, validation tools,
+and workflows stay at the repository root and are never copied. Each directory
+name matches its skill `name`, and each `LICENSE` is a byte-identical copy of
+the root license so installed copies retain the notice.
+
+The packages are independent. Because an installer copies a single directory,
+neither skill links to the other, and each works when the other is absent.
+`scaffold` without a `docs/stack.md` offers to run `stacks` rather than
+referring to its files.
 
 ## Resource boundaries
+
+The table covers `stacks`. The `scaffold` package follows the same routing
+pattern: its [SKILL.md](../../skills/scaffold/SKILL.md) links every reference
+and the report template, and each reference loads only in the phase that needs
+it.
 
 | Resource | Responsibility | Loaded when |
 |---|---|---|
@@ -68,6 +94,28 @@ Guided checkpoints require an explicit reply unless prior authorization
 already covers the choice and writing. Unknown facts remain unknown even
 when the user delegates a decision. Available package versions are not
 automatically compatible, supported, stable, or verified.
+
+## Contracts between the skills
+
+Two contracts are shared by value, not by link, and the validator keeps them
+consistent:
+
+- **Secret-bearing file patterns.** A marked block in the `stacks`
+  [security guidance](../../skills/stacks/references/security.md) and in the
+  `scaffold` execution safety reference must be byte-identical. It governs
+  which files neither skill opens.
+- **`docs/stack.md` fields.** `scaffold` reads the stack summary, dependency
+  specification, local development, CI/CD, version verification log, and open
+  decisions sections, and writes only the implementation-state fields (authority
+  and implementation state, execution status, implementation evidence). Each
+  field it names must exist in the
+  [stack template](../../skills/stacks/templates/stack.md). Decision statuses
+  and verification states are defined by `stacks` and quoted, not redefined, by
+  `scaffold`.
+
+`scaffold` execution is never covered by an authorization delegated in
+`stacks`; it needs approval of the concrete plan, and commands outside that
+plan need a new checkpoint.
 
 ## Design choices
 

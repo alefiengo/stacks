@@ -32,6 +32,7 @@ Jump to: [Secrets](#secrets-and-audit-evidence) ·
 
 This rule applies in both modes.
 
+<!-- shared:secret-bearing-files:start -->
 - Do not open: `.env` and `.env.*` (except `.env.example`, `.env.sample`,
   `.env.template`), `*.pem`, `*.key`, SSH private keys such as `id_rsa`,
   `id_ecdsa`, or `id_ed25519` (not `*.pub`), `*.p12`, `*.pfx`, `*.tfvars`,
@@ -44,6 +45,7 @@ This rule applies in both modes.
 - If a file being read shows an inline credential, stop quoting it and record
   only `path:line` and the credential class.
 - Call such a file "tracked" only with version-control evidence; otherwise "present".
+<!-- shared:secret-bearing-files:end -->
 
 ## Dependency and supply chain scanning
 

@@ -9,6 +9,19 @@ version.
 
 ### Added
 
+- `scaffold` skill, version 1: executes an approved plan derived from
+  `docs/stack.md` to generate a Python or TypeScript project skeleton with
+  lint, type checking, tests, a Dockerfile and Compose when decided, and a CI
+  workflow, then records verification results in `docs/stack.md`. It requires
+  an existing `docs/stack.md`, chooses no technologies, never commits, pushes,
+  or deploys, and builds an image locally only when the approved plan names
+  it. Install it with `npx skills add alefiengo/stacks --skill scaffold`.
+  Acceptance scenarios SC01-SC26 cover it. Trials with Claude models generated
+  and verified Python and TypeScript skeletons; failures found in the trials
+  (git in a parent repository, formatters rewriting `docs/stack.md`, unclear
+  `TBD — verify` handling) were fixed and rerun.
+- Validator checks across every `skills/*/` package, including the shared
+  secret-bearing file block and the `docs/stack.md` fields `scaffold` reads.
 - Agent-specific installation instructions, with a manual file-copy route and
   an optional Skills CLI installer.
 - Agent-independent capability guidance and portability acceptance scenarios.
