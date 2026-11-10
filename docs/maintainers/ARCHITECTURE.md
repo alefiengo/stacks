@@ -23,7 +23,7 @@ byte-identical copy of the root license so installed copies retain the notice.
 | [Interview](../../skills/stacks/references/interview.md) | Missing requirements, guided decisions, release verification | Define mode |
 | [Layers](../../skills/stacks/references/layers.md) | Twelve-layer inventory and applicability | Decisions or inventory |
 | [Decision criteria](../../skills/stacks/references/decision-criteria.md) | Tradeoffs, health, support, compatibility | Recommendation or audit |
-| Language references | Contextual Python, TypeScript/Node, and Java defaults | Selected or inspected component |
+| Language references | Contextual Python, TypeScript/Node, Java, Go, and .NET defaults | Selected or inspected component |
 | [Deployment](../../skills/stacks/references/deployment.md) and [security](../../skills/stacks/references/security.md) | Cross-cutting operational decisions | Applicable layers |
 | [Audit guide](../../skills/stacks/references/audit.md) | Inspection, evidence, severity, prioritized actions | Audit mode |
 | [Templates](../../skills/stacks/templates/stack.md) | Output structure and rendering instructions | Writing project documents |

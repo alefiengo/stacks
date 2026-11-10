@@ -46,12 +46,14 @@ A shell, when available, is limited to commands that list or read files:
   `find`, `grep`, `git ls-files`, and `git rev-parse HEAD`, and reading individual files as text.
   Other git commands, such as `git status`, `git diff`, or `git log`, are not
   discovery commands: commands that refresh the index can invoke a
-  repository-configured program such as a `core.fsmonitor` hook.
+  repository-configured program such as a `core.fsmonitor` hook. Run the
+  allowed git commands only when the target root contains its own `.git`;
+  otherwise git resolves a parent repository outside the authorized root.
   Exclude [secret-bearing files](security.md#secret-bearing-files) from
   content searches and reads; listing their paths is enough.
 - Not allowed: package managers, build tools, and their wrappers (for example
-  `./gradlew`, `./mvnw`, `mvn`, `npm ls`, `pip`, `uv`, or
-  `docker compose config`), and any command that runs project code or
+  `./gradlew`, `./mvnw`, `mvn`, `npm ls`, `pip`, `uv`, `go list`, `go mod`,
+  `dotnet restore`, `dotnet list`, or `docker compose config`), and any command that runs project code or
   evaluates project configuration, plugins, or scripts. Such commands can
   execute repository-controlled code or contact registries.
 

@@ -5,7 +5,7 @@ and constraints. Apply the shared [decision criteria](../decision-criteria.md)
 for tool evaluation, release verification, and audit health.
 
 Jump to: [Runtime](#language-and-runtime) · [Profiles](#profile-rest-api) ·
-[Data](#data-layer) · [Testing](#testing) ·
+[Worker](#profile-worker-and-batch-jobs) · [Data](#data-layer) · [Testing](#testing) ·
 [Quality](#code-quality-and-structure) · [Operations](#observability-and-deployment)
 
 ## Language and runtime
@@ -68,6 +68,33 @@ Jump to: [Runtime](#language-and-runtime) · [Profiles](#profile-rest-api) ·
 - Validate HTTP/2, connection lifecycle, ingress, and health-check support on
   the selected deployment platform before promising compatibility.
 
+## Profile: worker and batch jobs
+
+Apply the shared [worker and job guidance](../deployment.md#workers-scheduled-work-and-batch-jobs)
+for execution platforms, delivery semantics, and alerting.
+
+- **Library:** compare a broker-backed library, **Celery** (RabbitMQ or Redis)
+  or **Dramatiq**, with a PostgreSQL-backed queue such as **Procrastinate**.
+  The database-backed option avoids a broker and may enqueue in the same
+  transaction as the business change; verify that capability. A broker fits
+  higher throughput, routing, or fan-out. Verify maintenance, release activity, and the current
+  license of the selected library and broker. A batch/ETL job run by the
+  platform's job model can be a plain entry point without a queue library.
+- **Idempotency and retries:** make tasks safe to run more than once, use the
+  library's bounded retry and backoff settings, and route exhausted tasks to a
+  dead-letter queue or failed-job state that someone owns and can replay.
+  Verify when the library acknowledges a message relative to task completion.
+- **Scheduling:** use the library's periodic-task feature or the platform's
+  scheduler, with a single scheduler or a lock so replicas do not duplicate runs.
+- **Shutdown and concurrency:** handle the platform's termination signal by
+  stopping intake and finishing or releasing in-flight tasks within the grace
+  period. Choose processes, threads, or async execution from the workload (CPU
+  versus I/O) and the selected driver; keep worker and pool sizes within the
+  database connection budget.
+- **Observability:** log task identifiers and attempts in structured logs,
+  export queue and task metrics, and select OpenTelemetry instrumentation for
+  the chosen library only after verifying that a maintained one exists.
+
 ## Data layer
 
 Add persistence, caches, and workers only for an identified requirement.
@@ -83,11 +110,8 @@ Add persistence, caches, and workers only for an identified requirement.
 - Add **Redis** or a compatible server such as Valkey only for a concrete
   cache/session/coordination requirement; verify the current license of the
   selected server and edition against organization policy.
-- For background jobs compare Celery, Dramatiq, or a PostgreSQL-backed queue
-  such as Procrastinate against execution model, retries, scheduling, routing,
-  broker needs, and platform constraints. Verify maintenance and release
-  activity before choosing. Do not assume an HTTP service can run durable work
-  after a response.
+- Background jobs and their queue backend follow the
+  [worker and batch jobs profile](#profile-worker-and-batch-jobs).
 - Use the selected provider's object-storage API. An S3-compatible local
   service is suitable for an S3 integration; it does not establish parity with
   a GCS API. Record emulator/adapter limitations and integration coverage.

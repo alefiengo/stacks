@@ -7,7 +7,9 @@ and [security guidance](security.md) to the selected platform.
 
 Jump to: [Local environment](#deployment-model-and-local-environment-l8) ·
 [Containers](#application-container-patterns) · [CI/CD](#cicd-l9) ·
-[Managed containers](#managed-container-platforms) · [Microservices](#distributed-systems-and-microservices) ·
+[Managed containers](#managed-container-platforms) ·
+[Workers and jobs](#workers-scheduled-work-and-batch-jobs) ·
+[Microservices](#distributed-systems-and-microservices) ·
 [Infrastructure](#infrastructure-and-environments-l10)
 
 ## Deployment model and local environment (L8)
@@ -86,9 +88,8 @@ runtime contract and the capabilities of the selected service, job, or worker mo
 official sources. Keep unavailable or disallowed lookups pending verification.
 
 - Distinguish request-serving HTTP/gRPC services from batch jobs, scheduled
-  work, and persistent workers. Verify CPU allocation, execution duration,
-  retry semantics, shutdown, and scaling; do not assume work after an HTTP
-  response is durable. Queues require idempotent consumers and failure handling.
+  work, and persistent workers; apply the
+  [worker and job guidance](#workers-scheduled-work-and-batch-jobs) to the latter.
 - Choose region, minimum and maximum instances, concurrency, CPU, memory, and
   database connection budgets from latency, cost, availability, and workload.
   Do not prescribe a universal numeric concurrency or instance default.
@@ -112,6 +113,52 @@ official sources. Keep unavailable or disallowed lookups pending verification.
   separate mechanisms; verify version selection, access controls, and rotation.
 - Verify domains, TLS, load balancing, authentication, and rate limiting
   as a complete routing design. Record applicable regional/product constraints.
+
+## Workers, scheduled work, and batch jobs
+
+Apply this section to the worker and batch jobs profile and to background work
+inside other profiles. The language references choose the job library; this
+section covers execution and operations.
+
+- **Execution model:** choose a persistent worker for continuous queue
+  consumption, a run-to-completion job for batch/ETL or event-triggered units
+  of work, and a scheduler or cron trigger for periodic work. Examples include
+  Cloud Run worker pools and jobs, Azure Container Apps apps and jobs, and a
+  Kubernetes Job or CronJob. Verify the selected model's maximum duration,
+  retry and parallelism settings, timeouts, scaling triggers, and pricing.
+- **No hidden background work:** do not run durable work in a request handler
+  after the response or in a process the platform may throttle or stop. Use a
+  durable queue, job record, or platform job execution instead.
+- **Delivery semantics:** design for at-least-once execution, including
+  platform retries and interruption during maintenance. Use idempotency keys,
+  deduplication, or upserts for side effects. When a job must be enqueued with
+  a database change, enqueue in the same transaction through a database-backed
+  queue that supports it, or use a transactional outbox.
+- **Retries and dead-letter handling:** bound attempts with backoff and jitter,
+  separate permanent from transient failures, and move exhausted work to a
+  dead-letter queue or failed-job state with an owner, alert, and replay
+  procedure.
+- **Scheduling:** state the time zone, overlap policy (for example, a
+  Kubernetes CronJob `concurrencyPolicy`), missed-run behavior, and how only one
+  scheduler fires each run. Several replicas each running an in-process
+  scheduler duplicate work unless locking or deduplication prevents it.
+- **Graceful shutdown:** on the platform's termination signal, stop accepting
+  work and finish, checkpoint, or release in-flight items within the verified
+  grace period. Keep acknowledgment, lease, or visibility timeouts longer than
+  the processing time, and checkpoint long batches so a restart resumes them.
+- **Concurrency and scaling:** derive worker concurrency from downstream
+  limits such as database connections, API quotas, and memory; scale on queue
+  depth or lag where the platform supports it. Do not prescribe universal values.
+- **Health and observability:** HTTP probes are N/A unless the platform
+  requires them or the worker already exposes an endpoint. Track queue depth,
+  age of the oldest item, throughput, duration, retries, failures, dead-letter
+  volume, and the last successful run of each scheduled job; alert on a growing
+  backlog, a missed or failed schedule, and new dead-letter items. Propagate
+  trace context from producer to consumer when tracing is in scope.
+- **Identity and data:** run workers under a dedicated least-privilege workload
+  identity for the queue, database, and APIs. Keep secrets and unnecessary
+  personal data out of job payloads, and re-check authorization for actions
+  performed on a user's behalf. See [security guidance](security.md).
 
 ## Distributed systems and microservices
 

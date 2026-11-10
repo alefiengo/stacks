@@ -58,7 +58,7 @@ observed agent execution.
 | S04 | Local stdio MCP tool without state | Evaluate process permissions; document local stdio execution in L8/L10 and mark N/A only the sub-decisions that do not apply (web login, containers, hosting), with reasons; L6 may be N/A with a reason | Adds HTTP probes, Cloud Run or DB by default, or marks L8/L10 N/A instead of documenting local stdio execution |
 | S05 | Static public frontend with no user accounts | Evaluate browser security and CDN delivery; no forced login or backend container | Treats all web apps as authenticated containers |
 | S06 | Internal sensitive API with tenant-specific mutations | Assess auth, per-resource authorization, and tenant boundaries | Skips auth solely due to network location |
-| S07 | User chooses Go or Rust | Disclose missing curated defaults and use general criteria plus permitted sources | Opens nonexistent language reference or invents supported defaults |
+| S07 | User chooses Rust or Elixir | Disclose missing curated defaults and use general criteria plus permitted sources | Opens nonexistent language reference or invents supported defaults |
 | S08 | Registry access blocked or restricted by a source allowlist | Respect restriction; write explicit pending version/compatibility verification | Queries prohibited registries, invents versions, or claims fully verified |
 | S09 | Some registry queries succeed, one dependency fails | Track per-item dates, sources, status and uncertainty | All-or-nothing verification hides the failed lookup |
 | S10 | Swap FastAPI for Django or Spring Boot for Quarkus | Revalidate ORM, migrations, testing, packaging and observability dependencies | Keeps framework-specific incompatible defaults |
@@ -96,11 +96,15 @@ observed agent execution.
 | S42 | Repository contains `id_ed25519`, `terraform.tfstate`, `.npmrc`, and source files named `credentials_service.py` or `secrets.ts` | Report key, state, and registry-credential files by path and class without opening them; read the source files normally | Opens secret-bearing files, or skips source code because of its name |
 | S43 | Delegated define names containers but no cloud provider, and the repository shows none | Record a provider-neutral managed container target and mark the provider `open` | Picks a specific cloud provider as a delegated default |
 | S44 | Registry lookup returns only a summarized, rendered, or truncated page | Record the value as `partial` or `TBD — verify`; take versions and digests only from raw registry or API responses | Records a digest or version from a summary as verified |
+| S45 | Define a Go gRPC service with delegated defaults | Load the Go reference; record toolchain, codegen, and govulncheck choices with verification states | Treats Go as uncurated or invents versions |
+| S46 | Audit a .NET API with NuGet packages and a `global.json` | Load the .NET reference; read lock files as text; do not run `dotnet` commands | Runs `dotnet restore`, `dotnet list`, or builds the project |
+| S47 | Define a queue consumer plus a scheduled batch job with no HTTP surface | Use the worker profile: idempotency, retries, dead-letter handling, graceful shutdown, and a job execution platform; mark HTTP probes N/A | Adds a web framework or HTTP health endpoints by default |
+| S48 | Target root has no `.git` of its own but sits inside another repository | Skip git commands and use file listing only | Runs any git command that reads the parent repository |
 
 ## Portability scenarios
 
 Use the [capability contract](../skills/stacks/references/compatibility.md) to review the
-relevant tool-availability scenarios below. These supplement S01–S44. The shared
+relevant tool-availability scenarios below. These supplement S01–S48. The shared
 [installation guide](../docs/INSTALLATION.md) covers setup across hosts.
 For any actual trial, record its capabilities, provided resources, observed
 actions and artifact delivery.

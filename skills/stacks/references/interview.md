@@ -50,9 +50,10 @@ mode, question interface, or shell is required for this interview.
 ### Q1 — What are you building? *(skip if declared)*
 
 Candidate profiles: REST API, MCP server, GraphQL API, gRPC service, web
-frontend, microservices, or a combination. Present at most three relevant
-options, including a recommendation when enough context is known. Allow
-another profile in free text.
+frontend, microservices, worker and batch jobs (queue consumers, scheduled or
+batch jobs without their own request server), or a combination. Present at
+most three relevant options, including a recommendation when enough context
+is known. Allow another profile in free text.
 
 If the answer includes both a frontend and an API, ask one follow-up: single
 codebase (e.g., a fullstack meta-framework) or separate frontend and backend?
@@ -61,21 +62,26 @@ This shapes the L3 structure decision later.
 ### Q2 — Language? *(skip if declared)*
 
 Offer up to three profile-appropriate languages plus "choose for me" and free
-text. Curated defaults cover Python, TypeScript, and Java. If another language
-is declared, retain it, use the general layers and decision criteria, and
+text. Curated defaults cover Python, TypeScript, Java, Go, and .NET. If another
+language is declared, retain it, use the general layers and decision criteria, and
 verify its tools using permitted official sources; never invent a reference
 path or present unsupported defaults as curated guidance.
 
 If no preference, recommend by profile fit and say why:
 
 - MCP server → compare Python and TypeScript SDK fit after verifying current
-  transport and feature support.
+  transport and feature support; consider another curated language's official
+  SDK when team fit favors it and the needed features are verified.
 - REST/GraphQL API → Python (velocity, data ecosystem), TypeScript (shared
-  types with a JS frontend), Java (enterprise durability, larger teams).
-- gRPC service → any; the contract is polyglot — follow team strength.
+  types with a JS frontend), Java or .NET (enterprise standards, larger teams;
+  follow the organization's platform), Go (compiled single-binary services).
+- gRPC service → any; the contract is polyglot — follow team strength. With no
+  preference, Go is an option for small compiled services.
 - Web frontend → TypeScript.
-- Microservices → default to the team's strongest language; polyglot only
-  with a reason.
+- Microservices → default to the team's strongest language; Go is an option
+  for small, independently deployed services. Polyglot only with a reason.
+- Worker and batch jobs → the language of the code that shares the domain
+  model or database; Python when data/ETL libraries dominate the work.
 
 ### Q3 — Who is it for? *(skip if declared or immaterial)*
 
@@ -104,6 +110,12 @@ provider-neutral target such as "managed container platform" and mark the
 provider `open`. A stdio-only MCP server may need local
 execution rather than a hosted HTTP service; static frontends may use a CDN,
 while SSR frontends need a suitable runtime.
+
+For worker and batch jobs, offer the execution models that fit the work: a
+managed run-to-completion job, a persistent worker, or a cron/scheduler
+trigger. Verify duration, retry, shutdown, and scaling limits as described in
+[workers and jobs](deployment.md#workers-scheduled-work-and-batch-jobs); the
+provider rule above applies unchanged.
 
 ### Q5 — Any hard constraints? *(skip if declared or immaterial)*
 
@@ -164,7 +176,7 @@ Key dependencies to respect while asking:
 
 - L6 engine choice precedes L6 ORM/migration choice.
 - L6 cache/queue questions only if the user reported background work,
-  caching, or session needs.
+  caching, or session needs, or the profile is worker and batch jobs.
 - For L7, always assess trust boundaries, identities, sensitive data, and privileged
   actions, including internal services. Ask a concrete auth choice only when
   unresolved; a public static site with no protected actions may justify N/A.
@@ -198,7 +210,12 @@ the choice.
    - Node packages → npm registry (`https://registry.npmjs.org/<pkg>`);
      `dist-tags.latest` is a candidate, not proof of stability or compatibility.
    - Java artifacts → Maven Central (`https://search.maven.org`).
-   - Runtimes → python.org, nodejs.org release schedule, JDK LTS pages.
+   - Go modules → Go module proxy (`https://proxy.golang.org/<module>/@v/list`);
+     pseudo-versions and pre-releases are not stable releases.
+   - .NET packages → NuGet (`https://api.nuget.org/v3-flatcontainer/<id>/index.json`,
+     lowercase id); the list includes pre-releases.
+   - Runtimes → python.org, nodejs.org release schedule, JDK LTS pages,
+     go.dev release history, and the .NET support policy and release metadata.
    - Container images → the publisher's registry; verify the intended platform
      and record a readable tag plus its immutable `@sha256:<digest>` when
      available. A mutable tag alone is not a reproducible pin. Never invent
