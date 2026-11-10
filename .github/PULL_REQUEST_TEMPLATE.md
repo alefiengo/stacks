@@ -10,5 +10,6 @@ scenario reviews, and actual agent exercises. State anything not verified.
 
 ## Compatibility
 
-Describe affected modes, references, templates (under `skills/stacks/`),
-shared vocabularies, or installation behavior. Write "None" when no compatibility change applies.
+Describe affected skills (`stacks`, `scaffold`), modes, references,
+templates (under `skills/<name>/`), shared vocabularies or contracts between
+the skills, or installation behavior. Write "None" when no compatibility change applies.

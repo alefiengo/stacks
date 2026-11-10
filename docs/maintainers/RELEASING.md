@@ -1,6 +1,7 @@
 # Release process
 
-A release publishes an identified revision of the skill and its resources.
+A release publishes an identified revision of the repository's skills
+(`stacks` and `scaffold`) and their resources.
 Preparing a release does not authorize pushing, tagging, or publishing it.
 Proceed with those external actions only within the owner's stated scope.
 
@@ -9,8 +10,9 @@ Proceed with those external actions only within the owner's stated scope.
 1. Review the [changelog](../../CHANGELOG.md). Describe user-visible behavior,
    compatibility changes, and migrations without claiming a release that has
    not occurred.
-2. Confirm that [SKILL.md](../../skills/stacks/SKILL.md), references, and
-   templates agree.
+2. Confirm that each skill's SKILL.md ([stacks](../../skills/stacks/SKILL.md),
+   [scaffold](../../skills/scaffold/SKILL.md)), references, and templates agree,
+   and that the contracts shared between the skills still match.
    Review the [acceptance scenarios](../../validation/README.md) affected by
    the change. Choose document review or targeted agent exercises in proportion
    to the behavior and risk being changed.
@@ -22,7 +24,8 @@ Proceed with those external actions only within the owner's stated scope.
    git diff --check HEAD
    ```
 
-   Run them with Python 3.11 or later. The CI whitespace check covers the
+   Run them with Python 3.11 or later; the validator checks every `skills/*/`
+   package. The CI whitespace check covers the
    whole tree, not only the latest commit; to reproduce it locally, run
    `git diff --check "$(git hash-object -t tree /dev/null)" HEAD`.
 
@@ -37,19 +40,28 @@ Proceed with those external actions only within the owner's stated scope.
 
 ## Package and installation guidance
 
-Confirm the public owner/repository and skill name before distributing the
-installation command. The documented source is `alefiengo/stacks`; forks must
+Confirm the public owner/repository and skill names before distributing the
+installation commands (`--skill stacks` and `--skill scaffold`). The documented source is `alefiengo/stacks`; forks must
 update the source identifier before distributing their installation command.
 
 Keep the shared [installation guide](../INSTALLATION.md) consistent with the
 distributable resources and the agent's own skill-loading procedure. The same
-skill package is used across agents; installation instructions may differ by
+skill packages are used across agents; installation instructions may differ by
 host. Check that `skills/stacks/` includes the entry point, every routed reference,
-both templates, and the license, and contains no maintainer files.
+both templates, and the license, and that `skills/scaffold/` includes the entry
+point, every routed reference, the report template, and the license. Neither
+may contain maintainer files or links into the other package.
 
-For packaging changes, check the installation in a disposable project and
-exercise define and audit requests. Record the revision, environment, actions,
-and output paths separately from document review.
+For packaging changes, check the installation of each skill in a disposable
+project and exercise define and audit requests for `stacks`. Record the
+revision, environment, actions, and output paths separately from document
+review.
+
+`scaffold` agent trials execute generators and install packages from public
+registries. Run them only on a maintainer machine, in `validation/.trial-*`
+fixtures, never in CI, and record them separately from static checks. Do not
+advertise `scaffold` as trialed in an agent until such a trial has been
+observed.
 
 Review relevant plain-text questions, supplied-evidence audits, no-write delivery
 and unavailable-retrieval scenarios against the

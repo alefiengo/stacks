@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the local skill package without network access or project execution.
+"""Validate the local skill packages without network access or project execution.
 
 This deliberately supports the Markdown, frontmatter and workflow conventions
 used by this repository. It is not a general YAML or Markdown parser, and it
@@ -15,27 +15,43 @@ from urllib.parse import unquote, urlsplit
 
 
 ROOT = Path(__file__).resolve().parent.parent
-PACKAGE = 'skills/stacks'
-SKILL = f'{PACKAGE}/SKILL.md'
-PACKAGE_RESOURCES = (
-    'references/compatibility.md',
-    'references/interview.md',
-    'references/layers.md',
-    'references/decision-criteria.md',
-    'references/deployment.md',
-    'references/security.md',
-    'references/audit.md',
-    'references/stacks/python.md',
-    'references/stacks/typescript.md',
-    'references/stacks/java.md',
-    'references/stacks/go.md',
-    'references/stacks/dotnet.md',
-    'templates/stack.md',
-    'templates/stack-audit.md',
-)
-PACKAGE_FILES = ('SKILL.md', 'LICENSE') + PACKAGE_RESOURCES
+SKILLS_DIR = 'skills'
+# The exact set of published packages; an extra or missing directory fails.
+PACKAGE_RESOURCES = {
+    'scaffold': (
+        'references/input-contract.md',
+        'references/execution-safety.md',
+        'references/verification.md',
+        'references/stacks/python.md',
+        'references/stacks/typescript.md',
+        'templates/scaffold-report.md',
+    ),
+    'stacks': (
+        'references/compatibility.md',
+        'references/interview.md',
+        'references/layers.md',
+        'references/decision-criteria.md',
+        'references/deployment.md',
+        'references/security.md',
+        'references/audit.md',
+        'references/stacks/python.md',
+        'references/stacks/typescript.md',
+        'references/stacks/java.md',
+        'references/stacks/go.md',
+        'references/stacks/dotnet.md',
+        'templates/stack.md',
+        'templates/stack-audit.md',
+    ),
+}
+PACKAGES = tuple(sorted(PACKAGE_RESOURCES))
+STACKS = f'{SKILLS_DIR}/stacks'
+SCAFFOLD = f'{SKILLS_DIR}/scaffold'
+STACKS_SKILL = f'{STACKS}/SKILL.md'
+SCAFFOLD_SKILL = f'{SCAFFOLD}/SKILL.md'
 PACKAGE_ENTRIES = ['LICENSE', 'SKILL.md', 'references', 'templates']
-RUNTIME_RESOURCES = tuple(f'{PACKAGE}/{relative}' for relative in PACKAGE_RESOURCES)
+RUNTIME_DIRECTORIES = ('references', 'templates')
+RUNTIME_RESOURCES = tuple(f'{SKILLS_DIR}/{name}/{relative}'
+                          for name in PACKAGES for relative in PACKAGE_RESOURCES[name])
 MAINTAINER_FILES = (
     'README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'SECURITY.md',
     'CHANGELOG.md', 'LICENSE', '.editorconfig', '.gitattributes',
@@ -46,7 +62,9 @@ MAINTAINER_FILES = (
     'validation/README.md',
     'validation/check_skill.py', 'validation/test_check_skill.py',
 )
-REQUIRED_FILES = MAINTAINER_FILES + tuple(f'{PACKAGE}/{relative}' for relative in PACKAGE_FILES)
+REQUIRED_FILES = MAINTAINER_FILES + tuple(
+    f'{SKILLS_DIR}/{name}/{relative}'
+    for name in PACKAGES for relative in ('SKILL.md', 'LICENSE') + PACKAGE_RESOURCES[name])
 # Never walked or followed anywhere: version control, caches, credentials, agent state.
 ALWAYS_EXCLUDED = {
     '.git', '.hg', '.svn', '__pycache__', '.aws', '.codex', '.agents', '.ssh',
@@ -57,16 +75,41 @@ ROOT_EXCLUDED = {'.venv', 'venv', 'node_modules', 'vendor', 'dist', 'build'}
 TEMP_PREFIXES = ('.trial-', '.checker-negative-', '.check-test-')
 MARKDOWN_SUFFIXES = {'.md', '.markdown'}
 MAX_RESOURCE_BYTES = 100_000
-# Scenario IDs are contiguous from S01; this is the minimum count that must remain.
+MAX_SKILL_LINES = 250
+# Scenario IDs are contiguous from S01 and SC01; these are the minimum counts that must remain.
 MIN_SCENARIOS = 48
 SCENARIOS = [f'S{number:02}' for number in range(1, MIN_SCENARIOS + 1)]
+MIN_SCAFFOLD_SCENARIOS = 13
+SCAFFOLD_SCENARIOS = [f'SC{number:02}' for number in range(1, MIN_SCAFFOLD_SCENARIOS + 1)]
 PORTABILITY_SCENARIOS = [f'U{number:02}' for number in range(1, 9)]
 LAYERS = [f'L{number}' for number in range(1, 13)]
 LAYER_FILES = (
-    f'{PACKAGE}/templates/stack.md', f'{PACKAGE}/templates/stack-audit.md',
-    f'{PACKAGE}/references/layers.md',
+    f'{STACKS}/templates/stack.md', f'{STACKS}/templates/stack-audit.md',
+    f'{STACKS}/references/layers.md',
 )
-TEMPLATES = (f'{PACKAGE}/templates/stack.md', f'{PACKAGE}/templates/stack-audit.md')
+STACK_TEMPLATE = f'{STACKS}/templates/stack.md'
+INPUT_CONTRACT = f'{SCAFFOLD}/references/input-contract.md'
+# Fields of docs/stack.md that scaffold reads: the stacks template must keep them
+# and the scaffold input contract must name them literally.
+STACK_FIELDS = (
+    '## 2. Stack summary',
+    '| # | Layer | Decision | Version | Status |',
+    '## 4. Dependency specification',
+    '## 5. Local development',
+    '| Execution status |',
+    '## 6. CI/CD pipeline',
+    '| Implementation evidence |',
+    '**Authority and implementation state:**',
+    '## 9. Version verification log',
+    '## 10. Open decisions, assumptions and next steps',
+)
+# Rules duplicated between packages; the text between the markers must be identical.
+SHARED_BLOCKS = {
+    'secret-bearing-files': (f'{STACKS}/references/security.md',
+                             f'{SCAFFOLD}/references/execution-safety.md'),
+}
+OBSOLETE_WORDING = ('every version below was', 'always include some', 'let me decide',
+                    'junit 5', 'fastmcp 2.x', 'postgres:17')
 WORKFLOW = '.github/workflows/validate.yml'
 DEPENDABOT = '.github/dependabot.yml'
 CI_COMMANDS = (
@@ -261,6 +304,7 @@ class Validator:
         self.docs = {}
         self.metadata = {}
         self.link_paths = {}
+        self.package_files = {}
 
     def check(self, condition, message):
         self.checks += 1
@@ -407,11 +451,12 @@ class Validator:
                 self.check(last + 1 == len(lines) or not lines[last + 1].strip(),
                            f'Heading needs a following blank line: {relative}:{first + 1}')
 
-    def frontmatter(self):
+    def frontmatter(self, name):
+        skill = f'{SKILLS_DIR}/{name}/SKILL.md'
         # Encoding defects are reported once by read_resource; parse the rest anyway.
-        skill = self.docs.get(SKILL, '').removeprefix('\ufeff').replace('\r\n', '\n')
-        match = re.match(r'\A---\n(.*?)\n---\n', skill, re.S)
-        if not self.check(match is not None, 'Missing or malformed skill frontmatter'):
+        text = self.docs.get(skill, '').removeprefix('\ufeff').replace('\r\n', '\n')
+        match = re.match(r'\A---\n(.*?)\n---\n', text, re.S)
+        if not self.check(match is not None, f'Missing or malformed skill frontmatter: {skill}'):
             return
         field, block, fields = None, False, {}
         for number, line in enumerate(match[1].split('\n'), 2):
@@ -419,27 +464,30 @@ class Validator:
                 fields[field].append(line.strip())
                 continue
             if block and not line.strip():
-                self.check(False, f'Blank line in the folded description on line {number}')
+                self.check(False, f'Blank line in the folded description on line {number}: {skill}')
                 continue
             item = re.fullmatch(r'([a-z]+):(?: (.*))?', line)
-            if not self.check(item is not None, f'Unsupported frontmatter syntax on line {number}'):
+            if not self.check(item is not None,
+                              f'Unsupported frontmatter syntax on line {number}: {skill}'):
                 block = False
                 continue
             field, value = item[1], (item[2] or '').strip()
             block = field == 'description' and value in {'>', '>-'}
-            self.check(field not in fields, f'Duplicate frontmatter key: {field}')
+            self.check(field not in fields, f'Duplicate frontmatter key: {field} in {skill}')
             self.check(field in {'name', 'description', 'license'},
-                       f'Unsupported frontmatter key on line {number}')
+                       f'Unsupported frontmatter key on line {number}: {skill}')
             self.check(block or plain_scalar(value),
-                       f'Unsupported frontmatter value on line {number}')
+                       f'Unsupported frontmatter value on line {number}: {skill}')
             fields[field] = [] if block else [value]
-        self.metadata = {key: ' '.join(values) for key, values in fields.items()}
-        name = self.metadata.get('name', '')
-        self.check(name == Path(PACKAGE).name, 'Skill name must equal its directory name')
-        self.check(1 <= len(self.metadata.get('description', '')) <= 1024,
-                   'Description must be 1..1024 characters')
-        self.check(self.metadata.get('license') == 'MIT', 'Frontmatter license must be MIT')
-        self.check(len(skill.splitlines()) <= 250, 'Core workflow exceeds its 250-line budget')
+        metadata = {key: ' '.join(values) for key, values in fields.items()}
+        self.metadata[name] = metadata
+        self.check(metadata.get('name', '') == name,
+                   f'Skill name must equal its directory name: {skill}')
+        self.check(1 <= len(metadata.get('description', '')) <= 1024,
+                   f'Description must be 1..1024 characters: {skill}')
+        self.check(metadata.get('license') == 'MIT', f'Frontmatter license must be MIT: {skill}')
+        self.check(len(text.splitlines()) <= MAX_SKILL_LINES,
+                   f'Core workflow exceeds its {MAX_SKILL_LINES}-line budget: {skill}')
 
     def license(self):
         text = self.read_resource(self.root / 'LICENSE')
@@ -447,14 +495,26 @@ class Validator:
             self.check(text.startswith('MIT License\n'), 'LICENSE must identify the approved MIT terms')
             self.check('Permission is hereby granted' in text and 'THE SOFTWARE IS PROVIDED "AS IS"' in text,
                        'LICENSE must retain the permission and disclaimer text')
-        packaged = self.read_resource(self.root / PACKAGE / 'LICENSE')
-        if text is not None and packaged is not None:
-            self.check(packaged == text, f'{PACKAGE}/LICENSE must be identical to LICENSE')
+        for name in PACKAGES:
+            packaged = self.read_resource(self.root / SKILLS_DIR / name / 'LICENSE')
+            if text is not None and packaged is not None:
+                self.check(packaged == text, f'{SKILLS_DIR}/{name}/LICENSE must be identical to LICENSE')
         self.check(not (self.root / 'LICENSE.proposed').exists(), 'Remove the obsolete adopted license draft')
 
-    def package(self):
-        """The installed package must hold only runtime files."""
-        package = self.root / PACKAGE
+    def packages(self):
+        """Publish exactly the expected packages, each holding only runtime files."""
+        try:
+            entries = sorted(os.listdir(self.root / SKILLS_DIR))
+        except OSError:
+            entries = None
+        self.check(entries == list(PACKAGES),
+                   f'{SKILLS_DIR}/ must contain exactly the packages: {", ".join(PACKAGES)}')
+        for name in PACKAGES:
+            self.package(name)
+
+    def package(self, name):
+        package = self.root / SKILLS_DIR / name
+        prefix = f'{SKILLS_DIR}/{name}'
         if not self.safe_dir(package):
             return
         try:
@@ -462,11 +522,17 @@ class Validator:
         except OSError:
             entries = None
         self.check(entries == PACKAGE_ENTRIES,
-                   f'{PACKAGE} must contain only SKILL.md, LICENSE, references/, and templates/')
-        expected = {f'{PACKAGE}/{relative}' for relative in PACKAGE_FILES}
+                   f'{prefix} must contain only SKILL.md, LICENSE, references/, and templates/')
+        found = []
         for path in self.walk(package, exclude=False):
             relative = self.relative(path)
-            self.check(relative in expected, f'Unexpected file in the installed package: {relative}')
+            parts = Path(relative).parts
+            allowed = (relative in {f'{prefix}/SKILL.md', f'{prefix}/LICENSE'}
+                       or (len(parts) > 3 and parts[2] in RUNTIME_DIRECTORIES
+                           and path.suffix == '.md'))
+            if self.check(allowed, f'Unexpected file in the installed package: {relative}'):
+                found.append(relative)
+        self.package_files[name] = found
 
     def case_mismatch(self, path):
         """Report a link whose path exists only with different letter case."""
@@ -552,29 +618,68 @@ class Validator:
     def rendered(self, relative):
         return visible_markdown(self.docs.get(relative, ''))[0]
 
+    def runtime_markdown(self, name, directory=None):
+        """Return the package's required and discovered Markdown, except SKILL.md."""
+        prefix = f'{SKILLS_DIR}/{name}/'
+        found = {prefix + relative for relative in PACKAGE_RESOURCES[name]}
+        found.update(relative for relative in self.package_files.get(name, ())
+                     if relative.endswith('.md'))
+        found.discard(prefix + 'SKILL.md')
+        if directory is not None:
+            found = {relative for relative in found if relative.startswith(f'{prefix}{directory}/')}
+        return sorted(found)
+
+    def shared_block(self, name, relative):
+        """Return the text between a shared block's markers, or None if they are not unique."""
+        lines = self.docs.get(relative, '').split('\n')
+        start, end = f'<!-- shared:{name}:start -->', f'<!-- shared:{name}:end -->'
+        if not self.check(lines.count(start) == 1 and lines.count(end) == 1
+                          and lines.index(start) < lines.index(end),
+                          f'Shared block {name} must appear exactly once: {relative}'):
+            return None
+        return '\n'.join(lines[lines.index(start) + 1:lines.index(end)])
+
     def contracts(self):
-        routed = self.link_paths.get(SKILL, set())
-        for relative in RUNTIME_RESOURCES:
-            self.check(relative in routed,
-                       f'Runtime resource is not routed from SKILL.md: {relative}')
+        for name in PACKAGES:
+            routed = self.link_paths.get(f'{SKILLS_DIR}/{name}/SKILL.md', set())
+            for relative in self.runtime_markdown(name):
+                self.check(relative in routed,
+                           f'Runtime resource is not routed from SKILL.md: {relative}')
+            for relative in self.runtime_markdown(name, 'templates'):
+                placeholders = re.findall(r'{{(.*?)}}', self.docs.get(relative, ''))
+                self.check(bool(placeholders)
+                           and all(re.fullmatch(r'[a-z][a-z0-9_]*', p) for p in placeholders),
+                           f'Template placeholders must be descriptive snake_case: {relative}')
         self.check('LICENSE' in self.link_paths.get('README.md', set()),
                    'README must link the active license')
         for relative in LAYER_FILES:
             layers = re.findall(r'^\| (L\d+)\b', self.rendered(relative), re.M)
             self.check(layers == LAYERS, f'Layer inventory must contain L1..L12 exactly once: {relative}')
-        for relative in TEMPLATES:
-            placeholders = re.findall(r'{{(.*?)}}', self.docs.get(relative, ''))
-            self.check(bool(placeholders) and all(re.fullmatch(r'[a-z][a-z0-9_]*', p) for p in placeholders),
-                       f'Template placeholders must be descriptive snake_case: {relative}')
-        active = '\n'.join(self.docs.get(key, '') for key in (SKILL,) + RUNTIME_RESOURCES).casefold()
-        for obsolete in ('every version below was', 'always include some', 'let me decide',
-                         'junit 5', 'fastmcp 2.x', 'postgres:17'):
+        active = '\n'.join(content for key, content in self.docs.items()
+                           if key.startswith(f'{SKILLS_DIR}/')).casefold()
+        for obsolete in OBSOLETE_WORDING:
             self.check(obsolete not in active, f'Known contradictory wording returned: {obsolete}')
+        for name, (first, second) in SHARED_BLOCKS.items():
+            blocks = [self.shared_block(name, first), self.shared_block(name, second)]
+            if None not in blocks:
+                self.check(blocks[0] == blocks[1],
+                           f'Shared block {name} differs between {first} and {second}')
+        template, contract = self.rendered(STACK_TEMPLATE), self.docs.get(INPUT_CONTRACT, '')
+        for field in STACK_FIELDS:
+            self.check(field in template,
+                       f'Field read by scaffold is missing from {STACK_TEMPLATE}: {field}')
+            self.check(field in contract,
+                       f'Field read by scaffold is not named in {INPUT_CONTRACT}: {field}')
         scenarios = self.rendered('validation/README.md')
         found = re.findall(r'^\| (S\d+) \|', scenarios, re.M)
         self.check(len(found) >= MIN_SCENARIOS
                    and found == [f'S{number:02}' for number in range(1, len(found) + 1)],
                    f'Acceptance scenarios must be contiguous from S01 and include S01..S{MIN_SCENARIOS:02}')
+        found = re.findall(r'^\| (SC\d+) \|', scenarios, re.M)
+        self.check(len(found) >= MIN_SCAFFOLD_SCENARIOS
+                   and found == [f'SC{number:02}' for number in range(1, len(found) + 1)],
+                   'Scaffold scenarios must be contiguous from SC01 and include '
+                   f'SC01..SC{MIN_SCAFFOLD_SCENARIOS:02}')
         self.check(re.findall(r'^\| (U\d+) \|', scenarios, re.M) == PORTABILITY_SCENARIOS,
                    'Portability scenarios must list U01..U08 exactly once and in order')
 
@@ -637,9 +742,10 @@ class Validator:
 
     def run(self):
         self.read_markdown()
-        self.frontmatter()
+        for name in PACKAGES:
+            self.frontmatter(name)
         self.license()
-        self.package()
+        self.packages()
         self.links()
         self.contracts()
         self.workflow()
@@ -658,9 +764,10 @@ def main(root=ROOT):
             print(f'FAIL: {error}', file=sys.stderr)
         print(f'{len(result.errors)} failures / {result.checks} checks', file=sys.stderr)
         return 1
-    metadata = result.metadata
-    print(f"Frontmatter: {metadata['name']}, {metadata['license']}, "
-          f"description {len(metadata['description'])} characters")
+    for name in PACKAGES:
+        metadata = result.metadata[name]
+        print(f"Frontmatter: {metadata['name']}, {metadata['license']}, "
+              f"description {len(metadata['description'])} characters")
     print(f'PASS: {result.checks} static checks across {len(result.docs)} Markdown files')
     print('No network, package installation, project execution, or agent behavior certification.')
     return 0

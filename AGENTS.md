@@ -2,10 +2,13 @@
 
 ## Purpose and scope
 
-This repository contains the `stacks` agent skill and its maintainer tooling.
-Read [SKILL.md](skills/stacks/SKILL.md) as the artifact being maintained. Its documentation-only
-output contract governs use of the installed skill; it does not prevent an
-explicitly requested change to this repository.
+This repository contains two agent skills and their maintainer tooling.
+`stacks` defines and audits technology stacks and produces documentation only.
+`scaffold` executes an approved plan derived from `docs/stack.md` and generates
+a project skeleton. Read the [stacks SKILL.md](skills/stacks/SKILL.md) and the
+[scaffold SKILL.md](skills/scaffold/SKILL.md) as the artifacts being maintained.
+Each skill's output contract governs use of that installed skill, and neither
+prevents an explicitly requested change to this repository.
 
 Work within the authorized repository and user-provided context. Do not use
 sibling projects, personal configuration, credential stores, or external
@@ -15,14 +18,23 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
 
 ## Repository map
 
-- [skills/stacks/](skills/stacks/SKILL.md): the installable runtime package;
-  installers copy this directory, so it holds only runtime files.
+- [skills/stacks/](skills/stacks/SKILL.md): the installable documentation
+  skill; installers copy this directory, so it holds only runtime files.
   - [SKILL.md](skills/stacks/SKILL.md): activation, operating contract, modes,
     resource routing.
   - [references/](skills/stacks/references/layers.md): focused guidance loaded
     on demand.
   - [templates/](skills/stacks/templates/stack.md): templates for project
     documentation.
+  - `LICENSE`: byte-identical copy of the root license.
+- [skills/scaffold/](skills/scaffold/SKILL.md): the installable generator
+  skill, self-contained like `stacks`.
+  - [SKILL.md](skills/scaffold/SKILL.md): activation, execution contract,
+    phases, resource routing.
+  - [references/](skills/scaffold/references/input-contract.md): input
+    contract, execution safety, verification, and Python and TypeScript guides.
+  - [templates/](skills/scaffold/templates/scaffold-report.md): the report
+    returned to the user.
   - `LICENSE`: byte-identical copy of the root license.
 - [validation/](validation/README.md): offline checks and acceptance scenarios.
 - [docs/maintainers/](docs/maintainers/ARCHITECTURE.md): design and release process.
@@ -31,8 +43,15 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
 
 1. Keep the entry point short. Put detailed guidance in the relevant reference
    and add an explicit relative Markdown link from the router when needed.
-2. Preserve both modes and their output paths: `docs/stack.md` and
-   `docs/stack-audit.md`, resolved under the target project root.
+2. Preserve both `stacks` modes and their output paths: `docs/stack.md` and
+   `docs/stack-audit.md`, resolved under the target project root. `stacks`
+   outputs stay documentation-only and intact; it never executes project
+   commands. Preserve `scaffold`'s execution contract: it requires an existing
+   `docs/stack.md`, chooses no technologies, runs only the commands of an
+   explicitly approved plan, never commits, pushes, deploys, or publishes, and
+   builds a container image locally only when the approved plan names it.
+   Extending it to another language is a decision for the owner after agent
+   trials.
 3. Update a rule and its dependent references, templates, and acceptance
    scenarios together. The shared vocabularies are decision status, inventory
    health, finding severity, verification state, and security-control status.
@@ -40,7 +59,13 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
    decision status, inventory health, verification states, and version policy;
    the [audit guide](skills/stacks/references/audit.md) defines finding
    severity; [security guidance](skills/stacks/references/security.md) defines
-   control status.
+   control status. Two contracts span both skills and are checked by the
+   validator: the shared block of secret-bearing file patterns, which stays
+   identical in [security guidance](skills/stacks/references/security.md) and in
+   the `scaffold` execution safety reference, and the `docs/stack.md` fields
+   that `scaffold` reads and writes, which must exist in the
+   [stack template](skills/stacks/templates/stack.md). The skills do not link
+   to each other; change a shared contract in both places.
 4. Maintain English public documentation and skill resources. The installed
    skill honors the user's conversation and document-language preferences.
 5. Use concrete language, descriptive placeholders, valid relative links,
@@ -51,14 +76,17 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
    restrictions and disclose unavailable evidence.
 7. Keep maintainer tools dependency-free unless a concrete requirement justifies
    a change. Do not add application scaffolding, deployment infrastructure, or
-   ceremonial policy to a documentation skill.
+   ceremonial policy to the `stacks` documentation skill.
 8. The project uses the [MIT license](LICENSE). Preserve its terms and notices,
    and keep [skills/stacks/LICENSE](skills/stacks/LICENSE) identical to the
-   root file; licensing changes require an explicit owner decision.
+   root file, and likewise [skills/scaffold/LICENSE](skills/scaffold/LICENSE);
+   licensing changes require an explicit owner decision.
 9. Keep the runtime agent-independent. Do not require host-specific tool names,
    UI modes, environment variables, install roots, or wrapper files. Maintain
    the [capability fallbacks](skills/stacks/references/compatibility.md) and test changes
-   against the portability scenarios as well as the stack workflows.
+   against the portability scenarios as well as the stack workflows. `scaffold`
+   without a shell or file writes returns its plan and file contents and states
+   that nothing was executed or saved.
 
 ## Validation and review
 
@@ -72,7 +100,9 @@ git diff --check HEAD
 
 Select relevant [acceptance scenarios](validation/README.md) for behavior
 changes. Tests use owned temporary fixtures inside this repository and must
-not read real credentials or execute an audited application's scripts. Report
+not read real credentials or execute an audited application's scripts.
+`scaffold` agent trials install packages from public registries, so they run
+only on a maintainer machine in `validation/.trial-*` fixtures and never in CI. Report
 static checks, scenario reviews, and actual agent trials separately.
 
 Independent work may be delegated when the user requests it. Assign separate
