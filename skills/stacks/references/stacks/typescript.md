@@ -5,7 +5,7 @@ the shared [decision criteria](../decision-criteria.md) for tool evaluation,
 release verification, and audit health.
 
 Jump to: [Runtime](#runtime-and-tooling) · [Profiles](#profile-rest-and-http-api) ·
-[Data](#data-layer) · [Testing](#testing) ·
+[Worker](#profile-worker-and-batch-jobs) · [Data](#data-layer) · [Testing](#testing) ·
 [Quality](#code-quality-and-structure) · [Operations](#observability-and-deployment)
 
 ## Runtime and tooling
@@ -84,6 +84,34 @@ Jump to: [Runtime](#runtime-and-tooling) · [Profiles](#profile-rest-and-http-ap
   verify the server adapter, generated clients, and platform support instead
   of assuming every gRPC/browser combination works.
 
+## Profile: worker and batch jobs
+
+Apply the shared [worker and job guidance](../deployment.md#workers-scheduled-work-and-batch-jobs)
+for execution platforms, delivery semantics, and alerting.
+
+- **Library:** compare **BullMQ**, Redis-backed by default, with a
+  PostgreSQL-backed queue such as **Graphile Worker** or **pg-boss**. A
+  database-backed queue avoids a separate broker and may enqueue in the same
+  transaction as the business change; verify that capability in the selected
+  library. Redis-backed queues fit higher throughput or existing Redis
+  operations. BullMQ also documents an optional PostgreSQL backend; verify its
+  feature coverage for the selected release. Verify maintenance, release
+  activity, and license. A batch/ETL job run by the platform's job model can
+  be a plain Node entry point without a queue library.
+- **Idempotency and retries:** make handlers safe to run more than once,
+  configure bounded attempts with backoff, and keep exhausted jobs in a failed
+  state or dead-letter queue that someone owns and can replay.
+- **Scheduling:** use the library's repeatable or cron jobs or the platform's
+  scheduler, and verify how the library prevents duplicate runs across replicas.
+- **Shutdown and concurrency:** on the platform's termination signal, stop
+  fetching, await in-flight handlers within the grace period, and close
+  connections. Set per-worker concurrency from I/O limits and the database
+  connection budget; move CPU-bound work to worker threads or separate processes
+  so it does not block the event loop.
+- **Observability:** use structured logs with job identifiers and attempts,
+  export queue and job metrics, and propagate trace context from producer to
+  consumer with compatible OpenTelemetry instrumentation.
+
 ## Internal TypeScript APIs
 
 - **tRPC** fits consumers that can share TypeScript contracts and coordinate
@@ -104,11 +132,8 @@ Add persistence, caches, and workers only for an identified requirement.
   Migration plans must consider existing data and rollback/roll-forward safety.
 - Add **Redis** or a compatible server such as Valkey only for a concrete
   requirement; verify the current license of the selected server and edition.
-  For jobs, compare **BullMQ**
-  with a PostgreSQL-backed option such as **Graphile Worker** according to
-  durability, retry, scheduling, and operational requirements.
-- Background workers need an explicit execution platform and idempotency;
-  do not assume work continues safely after an HTTP response.
+- Background jobs and their queue backend follow the
+  [worker and batch jobs profile](#profile-worker-and-batch-jobs).
 
 ## Testing
 

@@ -5,7 +5,8 @@ build choices. Apply the shared [decision criteria](../decision-criteria.md)
 for tool evaluation, release verification, and audit health.
 
 Jump to: [Runtime](#runtime-and-build) · [Framework](#framework) ·
-[Profiles](#profile-rest-api) · [Data](#data-layer) · [Testing](#testing) ·
+[Profiles](#profile-rest-api) · [Worker](#profile-worker-and-batch-jobs) ·
+[Data](#data-layer) · [Testing](#testing) ·
 [Quality](#code-quality-and-structure) · [Operations](#observability-and-deployment)
 
 ## Runtime and build
@@ -76,6 +77,35 @@ Jump to: [Runtime](#runtime-and-build) · [Framework](#framework) ·
   [deployment](../deployment.md) guidance. Local stdio uses process permissions
   and lifecycle rather than an HTTP container.
 
+## Profile: worker and batch jobs
+
+Apply the shared [worker and job guidance](../deployment.md#workers-scheduled-work-and-batch-jobs)
+for execution platforms, delivery semantics, and alerting.
+
+- **Library:** compare a database-backed option with a message broker by
+  durability, throughput, ordering, and operational ownership. Database-backed
+  choices include **JobRunr** for background jobs (verify the license and which
+  features need its commercial edition) and **Quartz** with a JDBC job store
+  for persistent, clustered schedules. Broker consumers in Spring use
+  **Spring for Apache Kafka** or **Spring AMQP** (RabbitMQ). For chunked
+  batch/ETL with restartable job metadata, use **Spring Batch**. Quarkus and
+  Micronaut provide their own scheduler and messaging extensions; verify them.
+- **Idempotency and retries:** make consumers and job steps safe to repeat,
+  bound retries with backoff, and route exhausted messages to a dead-letter
+  topic or queue, or a failed-job state, with an owner and replay procedure.
+  Verify acknowledgment and offset-commit behavior relative to completion.
+- **Scheduling:** Spring `@Scheduled` runs in every replica; add a lock such as
+  **ShedLock**, a clustered Quartz store, or a single platform scheduler so
+  each run fires once. ShedLock is a lock, not a distributed scheduler.
+- **Shutdown and concurrency:** enable the framework's graceful shutdown, stop
+  consumers before closing pools, and finish or release in-flight work within
+  the platform's grace period. Size consumer concurrency and thread pools from
+  downstream limits and the database connection budget.
+- **Observability:** in Spring, expose job and consumer metrics through
+  Micrometer where the integration supports it; record job identifiers,
+  attempts, and outcomes in structured logs and propagate trace context through
+  message headers with compatible instrumentation.
+
 ## Data layer
 
 Add persistence, caches, and workers only for an identified requirement.
@@ -92,10 +122,9 @@ Add persistence, caches, and workers only for an identified requirement.
   edition. Avoid two tools owning the same schema.
 - DTO/entity mapping can be explicit or use **MapStruct** when complexity
   justifies code generation; validate annotation-processor/JDK compatibility.
-- Add caches, queues, or object storage only when justified. For jobs, compare
-  a database-backed scheduler or queue with a message broker by durability,
-  throughput, ordering, and operational ownership; both need explicit execution,
-  retries, and idempotency. Verify maintenance before choosing a library.
+- Add caches, queues, or object storage only when justified. Background jobs
+  and their queue backend follow the
+  [worker and batch jobs profile](#profile-worker-and-batch-jobs).
 
 ## Testing
 

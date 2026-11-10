@@ -19,6 +19,7 @@ version.
   checkpoint exits, published documentation, target-stack requests,
   secret-bearing files beyond `.env`, unnamed cloud providers, and
   summarized registry responses.
+- Curated Go and .NET references, and a worker and batch jobs profile.
 - Offline validation with negative tests, and a continuous validation
   workflow for pushes and pull requests.
 - MIT license, security reporting guidance, and a documented release process.

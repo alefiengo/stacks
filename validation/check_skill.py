@@ -28,6 +28,8 @@ PACKAGE_RESOURCES = (
     'references/stacks/python.md',
     'references/stacks/typescript.md',
     'references/stacks/java.md',
+    'references/stacks/go.md',
+    'references/stacks/dotnet.md',
     'templates/stack.md',
     'templates/stack-audit.md',
 )
@@ -56,7 +58,7 @@ TEMP_PREFIXES = ('.trial-', '.checker-negative-', '.check-test-')
 MARKDOWN_SUFFIXES = {'.md', '.markdown'}
 MAX_RESOURCE_BYTES = 100_000
 # Scenario IDs are contiguous from S01; this is the minimum count that must remain.
-MIN_SCENARIOS = 44
+MIN_SCENARIOS = 48
 SCENARIOS = [f'S{number:02}' for number in range(1, MIN_SCENARIOS + 1)]
 PORTABILITY_SCENARIOS = [f'U{number:02}' for number in range(1, 9)]
 LAYERS = [f'L{number}' for number in range(1, 13)]

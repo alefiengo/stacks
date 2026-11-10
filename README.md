@@ -55,8 +55,9 @@ else an existing document's language, else English. Existing decisions are prese
 
 ## Coverage
 
-- **Profiles:** REST, MCP, GraphQL, gRPC, web frontends, and microservices.
-- **Curated defaults:** Python, TypeScript/Node, and Java; general criteria
+- **Profiles:** REST, MCP, GraphQL, gRPC, web frontends, microservices, and
+  background workers or batch jobs.
+- **Curated defaults:** Python, TypeScript/Node, Java, Go, and .NET; general criteria
   apply to other languages.
 - **Layers:** runtime, framework, architecture, quality, tests, data, identity,
   local environment, CI/CD, infrastructure, observability, and security.

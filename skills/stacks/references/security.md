@@ -54,6 +54,15 @@ This rule applies in both modes.
   API key (store it as a CI secret) and needs a data cache and a suppression
   policy; OSV-Scanner or SBOM scanning are alternatives.
   Dependency inventories and version-update tooling alone do not establish CVE coverage.
+- **Go:** govulncheck (`govulncheck ./...`), which uses the Go vulnerability
+  database and reports vulnerabilities reachable from the analyzed code.
+  Results depend on the analyzed packages and build configuration.
+- **.NET:** NuGet Audit runs during restore and reports NU1901–NU1904 warnings;
+  `NuGetAuditMode` selects direct or transitive coverage, and its default
+  depends on the target framework, so set it explicitly. Promote the selected
+  severities to errors in CI, where a report command such as
+  `dotnet list package --vulnerable --include-transitive` (`dotnet package
+  list` in newer SDKs) can run. The stack workflow itself never runs it.
 - **Containers:** trivy, grype, or the platform's supported image scanner when
   images are built. Scan the actual release artifact including base packages.
 - Pin scanner actions, binaries, and images to a SHA or digest; scanners get

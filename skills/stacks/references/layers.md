@@ -19,8 +19,10 @@ an incompatible choice.
 
 **Always** means assess for every profile; **conditional** means decide or
 justify `N/A` from the rules below. Profiles include REST API, MCP server,
-GraphQL API, gRPC service, web frontend, and microservices. The table guides
-assessment rather than imposing unnecessary infrastructure.
+GraphQL API, gRPC service, web frontend, microservices, and worker and batch
+jobs (queue consumers, scheduled jobs, and batch/ETL jobs without their own
+request server). The table guides assessment rather than imposing unnecessary
+infrastructure.
 
 | Layer | Applicability |
 |---|---|
@@ -61,6 +63,12 @@ Applicability rules (retain all 12 rows; use `N/A` plus a reason when skipped):
   protocol stdout clear and may log to stderr; HTTP endpoints, container scans,
   and CORS are N/A when those surfaces do not exist. Security assessment remains
   relevant even when individual controls are not applicable.
+- **Worker and batch jobs** — L8–L10 follow the execution platform: a managed
+  job, a persistent worker, or a cron/scheduler trigger. L7 covers the
+  worker's machine identity toward queues, databases, and APIs even without
+  end users. L11 tracks queue and job metrics with alerts. HTTP probes are N/A
+  unless the platform requires them or the worker exposes an endpoint. See
+  [workers and jobs](deployment.md#workers-scheduled-work-and-batch-jobs).
 
 ## Per-layer specification
 
@@ -78,7 +86,8 @@ runtime/tool compatibility.
 
 The main shifting category. Sub-decisions by profile: API framework; MCP SDK
 and transport; GraphQL server + schema library; gRPC codegen stack; frontend
-meta-framework vs SPA; validation library; HTTP client. Compare 2–3 options
+meta-framework vs SPA; job/queue library or plain batch entry point for
+workers; validation library; HTTP client. Compare 2–3 options
 with one-line tradeoffs; use the applicable curated stack reference when
 available, otherwise use general criteria and permitted official evidence.
 
@@ -114,15 +123,16 @@ managed service, for example Cloud SQL on GCP, vs a self-managed container in
 production), ORM and driver, migrations tool (settled), cache (only for a
 concrete shared cache, session, or coordination need; verify the license of
 the selected engine and compare compatible alternatives), queues/workers (when
-background or scheduled work exists; choose by operational requirements), and
-blob storage (when files are in scope).
+background or scheduled work exists; compare a database-backed queue with a
+message broker by operational requirements), and blob storage (when files are
+in scope).
 
 ### L7 — Authentication and authorization
 
 Decide: trust boundaries and required identities, auth provider (OIDC via an
 established provider where applicable — never custom cryptographic protocols),
 token validation strategy (including JWKS and audiences where applicable),
-service-to-service identity, and browser session strategy. Assess the
+service-to-service and worker machine identity, and browser session strategy. Assess the
 selected platform's workload identity and service-to-service token model (for
 example, Google-signed ID tokens on Cloud Run); consider `HttpOnly` cookies to
 reduce browser token exposure. Use the [security guide](security.md) for the
@@ -166,8 +176,9 @@ rollback/migration behavior where relevant. Use the
 Decide: structured logging (JSON for applicable services, stderr for stdio
 protocols), metrics/tracing destinations and compatible instrumentation,
 optional error tracking, applicable health protocols, uptime checks, and
-alerting. Scale to the operational need; do not prescribe HTTP health endpoints
-or tracing dependencies for every profile. Ask only unresolved material choices.
+alerting. For workers and jobs, track queue depth and age, failures, retries,
+dead-letter volume, and missed schedules. Scale to the operational need; do
+not prescribe HTTP health endpoints or tracing dependencies for every profile. Ask only unresolved material choices.
 
 ### L12 — Security
 
