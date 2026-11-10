@@ -9,7 +9,8 @@ Proceed with those external actions only within the owner's stated scope.
 1. Review the [changelog](../../CHANGELOG.md). Describe user-visible behavior,
    compatibility changes, and migrations without claiming a release that has
    not occurred.
-2. Confirm that [SKILL.md](../../SKILL.md), references, and templates agree.
+2. Confirm that [SKILL.md](../../skills/stacks/SKILL.md), references, and
+   templates agree.
    Review the [acceptance scenarios](../../validation/README.md) affected by
    the change. Choose document review or targeted agent exercises in proportion
    to the behavior and risk being changed.
@@ -18,8 +19,12 @@ Proceed with those external actions only within the owner's stated scope.
    ```bash
    python3 -B validation/check_skill.py
    python3 -B -m unittest discover -s validation -p 'test_*.py'
-   git diff --check
+   git diff --check HEAD
    ```
+
+   Run them with Python 3.11 or later. The CI whitespace check covers the
+   whole tree, not only the latest commit; to reproduce it locally, run
+   `git diff --check "$(git hash-object -t tree /dev/null)" HEAD`.
 
 4. Review the full diff, including untracked files. Remove only owned test
    fixtures and exclude caches, credentials, generated reports, and local
@@ -39,8 +44,8 @@ update the source identifier before distributing their installation command.
 Keep the shared [installation guide](../INSTALLATION.md) consistent with the
 distributable resources and the agent's own skill-loading procedure. The same
 skill package is used across agents; installation instructions may differ by
-host. Check that the package includes the entry point, every routed reference,
-both templates, and the license.
+host. Check that `skills/stacks/` includes the entry point, every routed reference,
+both templates, and the license, and contains no maintainer files.
 
 For packaging changes, check the installation in a disposable project and
 exercise define and audit requests. Record the revision, environment, actions,
@@ -48,17 +53,27 @@ and output paths separately from document review.
 
 Review relevant plain-text questions, supplied-evidence audits, no-write delivery
 and unavailable-retrieval scenarios against the
-[capability contract](../../references/compatibility.md).
+[capability contract](../../skills/stacks/references/compatibility.md).
 
 ## Automation and publication
 
 The [validation workflow](../../.github/workflows/validate.yml) defines the
-repository checks for pushes and pull requests. It requests read-only access,
-does not deploy, and does not use production secrets. The checkout action is
-pinned to an immutable revision; automated action updates are proposed through
+repository checks for pushes and pull requests. It runs the validator, the
+validator tests, and the whole-tree whitespace check above. It requests
+read-only access, does not deploy, and does not use production secrets.
+Actions are pinned to a commit SHA with the released version in a comment;
+automated action updates are proposed through
 [Dependabot](../../.github/dependabot.yml).
 
+## Versioning
+
+Releases follow [Semantic Versioning](https://semver.org/). A release is a Git
+tag `vX.Y.Z` on the released revision; the tag is the only source of the
+version, so it is not duplicated in `SKILL.md` frontmatter. In the changelog,
+move the `## Unreleased` entries under a `## [X.Y.Z] - YYYY-MM-DD` heading
+only when that release is published.
+
 When publication is authorized, identify the release revision, finalize its
-changelog entry and version/tag using the repository's release convention,
-then publish that revision. Keep a record of checks and any known limitations.
+changelog entry, create the matching tag, then publish that revision. Keep a
+record of checks and any known limitations.
 Do not advertise a tested public install or skills.sh listing until observed.

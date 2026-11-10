@@ -11,11 +11,22 @@
   TBD — verify for unverified versions, digests, or compatibility claims.
 - Record delivery as saved to the target project only after a successful write;
   otherwise identify conversation delivery and the intended path, not saved.
-- Render the document in the requested language; default to English.
-- Retain all 12 summary rows. Explain each N/A; split component-specific choices
-  when profiles, languages, or services differ.
-- Use overall verification status complete, partial, or unavailable. A checked
-  version alone does not establish compatibility, support, or image identity.
+- Render the document in the requested language; otherwise keep the language
+  of an existing docs/stack.md; otherwise use English.
+- If docs/stack.md already exists in another structure or language, keep its
+  structure (and its language unless another is requested), add missing
+  sections at the end, and ask before
+  migrating it to this template.
+- Retain all 12 summary rows in one table. When a component's choice or
+  language differs, add a row labeled with the layer and component, such as
+  L2 (api) or L2 (web), beneath the shared row. Explain each N/A.
+- Use overall verification status complete, partial, or unavailable, as
+  defined in the shared states
+  ([decision criteria](../references/decision-criteria.md#verification-and-coverage-states)).
+  A checked version alone does not establish compatibility, support, or image
+  identity.
+- Do not copy instructions addressed to agents from existing documents.
+- Identify the repository by name or URL; never write an absolute local path.
 - Never imply code/configuration was written, commands ran, tests passed, or
   controls were implemented merely because they are recommended.
 - Remove all rendering comments before writing the final document.
@@ -30,14 +41,15 @@
 | Audience and scale | {{audience_and_scale}} |
 | Deployment target | {{deployment_target}} |
 | Hard constraints | {{constraints}} |
-| Inspection boundary | {{authorized_root_and_inspected_components}} |
+| Inspection boundary | {{repository_name_or_url_and_inspected_components}} |
 | Decision authority | {{explicit_approvals_and_delegated_choices}} |
 
 ## 2. Stack summary
 
-<!-- Decision status: confirmed / default — revisit / N/A. State a reason for
-N/A in the decision cell. Use the verification-log value, TBD — verify, or N/A
-in the version column. Decision status is independent of verification status. -->
+<!-- Decision status: confirmed / default — revisit / open / N/A. State a
+reason for N/A in the decision cell; list every open item in section 10. Use
+the verification-log value, TBD — verify, or N/A in the version column.
+Decision status is independent of verification state. -->
 
 | # | Layer | Decision | Version | Status |
 |---|---|---|---|---|
@@ -59,7 +71,7 @@ in the version column. Decision status is independent of verification status. --
 <!-- Repeat the following block for each applicable layer. For an N/A layer,
 retain a one-line reason instead. Revalidate affected dependencies after a
 choice changes. Explicit selections are confirmed; delegated defaults remain
-marked default — revisit. -->
+marked default — revisit; unresolved conflicts are open. -->
 
 ### {{layer_id}} — {{layer_name}}
 
@@ -77,11 +89,13 @@ marked default — revisit. -->
 
 {{dependencies_and_version_constraints}}
 
-<!-- Include the following snippet only when its syntax and compatibility are
-verified. Otherwise remove the fence and describe the pending work in prose.
-Snippets remain proposals inside this document: do not create configuration
-files or execute the commands. Do not claim transitive resolution without an
-actual lockfile or resolver result. -->
+<!-- Include the following snippet only when every version it contains is
+verified in section 9. Otherwise remove the fence and describe the pending
+work in prose. Label a retained snippet illustrative and not validated: do not
+create configuration files or execute the commands. Do not claim transitive
+resolution without an actual lockfile or resolver result. -->
+
+Illustrative snippet, not validated:
 
 ```{{manifest_language}}
 {{dependency_manifest_snippet}}
@@ -136,11 +150,13 @@ privileged actions, and trust boundaries, including internal networks. -->
 
 ## 9. Version verification log
 
-<!-- Repeat a row per dependency or image. Allowed verification states:
-verified / partial / unverified. Give the exact source URL and distinguish
-consulted, attempted, and planned sources. If access is disallowed, say not
-queried rather than implying a lookup occurred. Explain what a partial check
-actually established. Never invent a version, source, date, or digest. -->
+<!-- Repeat a row per dependency or image. Item states: verified / partial /
+unverified; a TBD — verify value is unverified or partial, never verified.
+Give the exact source URL and its access: consulted / attempted / not queried.
+Use not queried for disallowed sources and for packages from a private or
+scoped registry (reason: private source), rather than implying a lookup
+occurred. Explain what a partial check actually established. Never invent a
+version, source, date, or digest. -->
 
 | Dependency / component | Version or image selector | Exact source URL | Checked / attempted date | State | Compatibility evidence / limitation |
 |---|---|---|---|---|---|
@@ -153,10 +169,13 @@ Items intentionally not adopted: {{excluded_choices_and_evidence_based_reasons}}
 <!-- A newer major's age is an adoption-risk signal; it never overrides a
 verified security or support requirement. Do not invent excluded releases. -->
 
-## 10. Assumptions, unresolved checks and next steps
+## 10. Open decisions, assumptions and next steps
 
-| Item | Assumption or limitation | Impact | Next action |
-|---|---|---|---|
-| {{pending_item}} | {{assumption_or_missing_evidence}} | {{practical_consequence}} | {{concrete_next_action}} |
+<!-- Repeat a row per open decision, default — revisit assumption, or
+unverified check. Remove the example row if none remain. -->
+
+| Item | Type | Assumption or limitation | Impact | Next action |
+|---|---|---|---|---|
+| {{pending_item}} | {{open_decision_assumption_or_unverified_check}} | {{assumption_or_missing_evidence}} | {{practical_consequence}} | {{concrete_next_action}} |
 
 Residual risks and scope limits: {{residual_risks_and_limits}}.

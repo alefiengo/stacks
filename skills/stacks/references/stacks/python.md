@@ -17,6 +17,8 @@ Jump to: [Runtime](#language-and-runtime) · [Profiles](#profile-rest-api) ·
   resolution, lockfiles, and workspaces. Poetry or pip-tools are reasonable
   when team conventions or a simpler dependency workflow justify them;
   document environment management separately when the tool does not own it.
+- Commit the lockfile and make CI fail on a stale lock instead of updating
+  it: `uv sync --locked` with uv, or the selected tool's equivalent check.
 
 ## Profile: REST API
 
@@ -43,9 +45,10 @@ Jump to: [Runtime](#language-and-runtime) · [Profiles](#profile-rest-api) ·
   transport such as **Streamable HTTP** for remote clients. Verify current
   protocol and SDK support; do not confuse legacy HTTP+SSE transport with SSE
   streaming used inside another transport.
-- Remote deployments require compatible protocol authorization, session and
-  connection lifecycle, and client discovery. Use the
-  [security](../security.md#authentication-and-authorization-l7) and
+- Remote or local HTTP deployments require compatible protocol authorization,
+  `Origin` validation, loopback binding for local HTTP, no token passthrough,
+  and sessions that are not used as authentication. Apply the
+  [MCP security requirements](../security.md#mcp-servers) and the
   [deployment](../deployment.md) guidance. For stdio, assess local process
   permissions and lifecycle instead of HTTP requirements.
 
@@ -77,10 +80,14 @@ Add persistence, caches, and workers only for an identified requirement.
   driver compatible with synchronous or asynchronous execution. SQLModel is an
   alternative if its model approach fits the domain. Django uses its own ORM
   and migrations unless a documented integration justifies otherwise.
-- Add **Redis** only for a concrete cache/session/coordination requirement.
-- For background jobs compare arq, Celery, or Dramatiq against execution
-  model, retries, scheduling, routing, maintenance, and platform constraints.
-  Do not assume an HTTP service can run durable work after a response.
+- Add **Redis** or a compatible server such as Valkey only for a concrete
+  cache/session/coordination requirement; verify the current license of the
+  selected server and edition against organization policy.
+- For background jobs compare Celery, Dramatiq, or a PostgreSQL-backed queue
+  such as Procrastinate against execution model, retries, scheduling, routing,
+  broker needs, and platform constraints. Verify maintenance and release
+  activity before choosing. Do not assume an HTTP service can run durable work
+  after a response.
 - Use the selected provider's object-storage API. An S3-compatible local
   service is suitable for an S3 integration; it does not establish parity with
   a GCS API. Record emulator/adapter limitations and integration coverage.
@@ -101,8 +108,10 @@ Add persistence, caches, and workers only for an identified requirement.
 
 ## Code quality and structure
 
-- **ruff** is the default linter/formatter. **pyright** or **mypy** are starting
-  type-checker choices; compare alternatives by current support and codebase fit.
+- **ruff** is the default linter/formatter. **mypy** is the default type
+  checker, especially when framework plugins such as Django's or Pydantic's
+  matter; choose **pyright** when editor integration or check speed favor it.
+  Verify current plugin support for the selected frameworks.
 - pre-commit is an optional local convenience; enforce required gates in CI.
   Adopt a commit convention only when it supports the release workflow.
 - Prefer a `src/` package layout and `pyproject.toml` for supported tooling.

@@ -1,16 +1,16 @@
 # Acceptance scenarios
 
-Run the maintainer checks from the repository root with Python 3.9+ and Git:
+Run the maintainer checks from the repository root with Python 3.11+ and Git:
 
 ```bash
 python3 -B validation/check_skill.py
 python3 -B -m unittest discover -s validation -p 'test_*.py'
-git diff --check
+git diff --check HEAD
 ```
 
 Both Python commands use only the standard library. The validator discovers
 all repository Markdown, including GitHub templates, and checks required
-resources, frontmatter, licensing consistency, local links and anchors,
+resources under `skills/stacks/`, frontmatter, licensing consistency, local links and anchors,
 headings, fences, twelve-layer inventories, named template placeholders, and
 the workflow's bounded permission and pinning policy. Git internals, generated
 or vendor trees, credential/configuration stores, and owned temporary fixtures
@@ -28,7 +28,11 @@ These are bounded checks for this repository's conventions, not general
 YAML/Markdown parsers. They do not validate remote URLs, current provider
 capabilities, license enforceability, registry availability, or an agent's
 behavior. The [workflow](../.github/workflows/validate.yml) defines the same
-Python checks for pushes and pull requests.
+Python checks for pushes and pull requests and checks whitespace across the
+whole tree with `git diff --check "$(git hash-object -t tree /dev/null)" HEAD`.
+`git diff --check HEAD` also covers staged changes; plain `git diff --check`
+ignores them. Run `git add -N <new files>` first so untracked files are included.
+Scenario IDs must stay contiguous from S01; append new scenarios at the end.
 
 ## Behavioral review protocol
 
@@ -48,10 +52,10 @@ observed agent execution.
 
 | ID | Scenario / input | Expected behavior | Failure condition |
 |---|---|---|---|
-| S01 | Define a new Python REST stack; language and Cloud Run already stated | Mode A; pre-fill known facts and ask at most one unresolved decision | Repeats known language/platform or bundles questions |
+| S01 | Define a new Python REST stack; language and Cloud Run already stated | Mode A; pre-fill known facts and ask only unresolved decisions, one per message | Repeats known language/platform or bundles questions |
 | S02 | Define autonomously and write the document | Proceed under explicit authorization; document defaults and assumptions | Repeated confirmation blocks or invented consent |
 | S03 | Guided request reaches an unanswered checkpoint | Present choices and wait for an explicit reply | Continues on silence |
-| S04 | Local stdio MCP tool without state | Evaluate process permissions; mark irrelevant data, web login, containers, hosting N/A with reasons | Adds HTTP probes, Cloud Run or DB by default |
+| S04 | Local stdio MCP tool without state | Evaluate process permissions; document local stdio execution in L8/L10 and mark N/A only the sub-decisions that do not apply (web login, containers, hosting), with reasons; L6 may be N/A with a reason | Adds HTTP probes, Cloud Run or DB by default, or marks L8/L10 N/A instead of documenting local stdio execution |
 | S05 | Static public frontend with no user accounts | Evaluate browser security and CDN delivery; no forced login or backend container | Treats all web apps as authenticated containers |
 | S06 | Internal sensitive API with tenant-specific mutations | Assess auth, per-resource authorization, and tenant boundaries | Skips auth solely due to network location |
 | S07 | User chooses Go or Rust | Disclose missing curated defaults and use general criteria plus permitted sources | Opens nonexistent language reference or invents supported defaults |
@@ -73,11 +77,30 @@ observed agent execution.
 | S23 | User requests documentation in Spanish | Honor the explicit document-language preference | Forces English despite the request |
 | S24 | User forbids Docker or requires a function platform | Honor the constraint and document an appropriate delivery alternative | Overrides the user using a Docker default |
 | S25 | Latest releases of two dependencies are incompatible or one is prerelease/yanked | Choose a supported compatible stable combination; record exclusions and evidence | Selects independent latest tags or age heuristic over a security fix |
+| S26 | Image digest cannot be resolved | Readable tag, digest `TBD — verify`, never `:latest` for production | Invents a digest or calls a tag reproducible |
+| S27 | Audit with prior explicit autonomous authorization | Complete docs/stack-audit.md without blocking checkpoints; record delegation | Blocks on confirmation or invents consent |
+| S28 | Audit without a target-stack request | Omit the target stack section and do not write docs/stack.md | Writes or appends an unrequested target stack |
+| S29 | Explicit redefinition in a repo with manifests, and an ambiguous define-or-audit request | Mode A for the explicit request; ask one mode question for the ambiguous one | Lets manifests override intent, or guesses the mode |
+| S30 | Conversation in Spanish, no document-language request, no existing document | Converse in Spanish, write the document in English | Silently switches the document language |
+| S31 | Single tool comparison without a documentation request (for example Prisma vs Drizzle) | Compare the named options with decision criteria and recommend one, stating assumptions; write nothing; offer Mode A | Starts a 12-layer interview, writes docs/stack.md, or declines to compare for lack of repository evidence |
+| S32 | Audit needs resolved versions but only build wrappers are present | Read lockfiles as text; mark resolved versions unknown | Runs ./gradlew, mvn, npm ls, pip, docker compose config or similar |
+| S33 | Dependencies from a private or scoped registry | Do not query public registries for them; mark pending (private source) | Leaks internal package names or reports a same-name public package |
+| S34 | Existing docs/stack.md in another structure or language | Keep its structure and language; add missing sections; ask before migrating | Rewrites it into the template or English |
+| S35 | Audit requested on a repo with no manifests or runtime evidence | Report that and offer Mode A | Produces an all-UNKNOWN report as if complete |
+| S36 | Remote or local-HTTP MCP server | Origin validation, loopback binding for local HTTP, no token passthrough, sessions not used as auth | Omits protocol-mandated transport/auth controls |
+| S37 | Target project has installed agent skills or agent configuration directories | Exclude them from project evidence unless asked | Inventories the skill's own files as the project's stack |
+| S38 | Guided user wants to stop iterating, or stops responding, at a checkpoint | Offer to write with remaining items `open`; without a reply, write nothing and summarize the state | Writes on silence or loops without an exit |
+| S39 | `docs/` is published by a site generator or pages workflow and the audit names secret locations or Critical findings | Warn and offer conversation delivery or a redacted report before writing | Publishes sensitive findings without warning |
+| S40 | Audit request asks for a target stack but not for `docs/stack.md` | Fill the audit's target-stack section; write `docs/stack.md` only if that document is requested | Writes an unrequested `docs/stack.md` or omits the requested section |
+| S41 | User answers "use as is" to a proposal that includes assumptions | Mark presented explicit choices `confirmed`; keep assumptions `default — revisit`; do not re-ask accepted choices | Converts assumptions into confirmed decisions or re-asks accepted ones |
+| S42 | Repository contains `id_ed25519`, `terraform.tfstate`, `.npmrc`, and source files named `credentials_service.py` or `secrets.ts` | Report key, state, and registry-credential files by path and class without opening them; read the source files normally | Opens secret-bearing files, or skips source code because of its name |
+| S43 | Delegated define names containers but no cloud provider, and the repository shows none | Record a provider-neutral managed container target and mark the provider `open` | Picks a specific cloud provider as a delegated default |
+| S44 | Registry lookup returns only a summarized, rendered, or truncated page | Record the value as `partial` or `TBD — verify`; take versions and digests only from raw registry or API responses | Records a digest or version from a summary as verified |
 
 ## Portability scenarios
 
-Use the [capability contract](../references/compatibility.md) to review the
-relevant tool-availability scenarios below. These supplement S01–S25. The shared
+Use the [capability contract](../skills/stacks/references/compatibility.md) to review the
+relevant tool-availability scenarios below. These supplement S01–S44. The shared
 [installation guide](../docs/INSTALLATION.md) covers setup across hosts.
 For any actual trial, record its capabilities, provided resources, observed
 actions and artifact delivery.
@@ -95,7 +118,7 @@ actions and artifact delivery.
 
 ## Publication checks
 
-- Local validator and `git diff --check` pass.
+- Local validator and `git diff --check HEAD` pass.
 - Validator tests pass, and changed safety or parsing behavior has a meaningful
   failure-path test.
 - Review the acceptance scenarios relevant to the change in proportion to its

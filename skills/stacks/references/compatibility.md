@@ -2,7 +2,7 @@
 
 `stacks` is an agent-independent Markdown workflow. Its entry point, references,
 and templates contain the behavior; no vendor SDK, extension, custom command,
-or model-specific feature is required.
+or model-specific feature is required. Load this guidance in both modes.
 
 ## Minimum contract
 
@@ -24,9 +24,12 @@ to compensate for missing capabilities during a stack task.
 | Structured questions | Present the same single decision and choices using the supported interface | Ask one plain-text question with concrete choices and free text |
 | Planning or task UI | Optionally track the workflow phases | Follow the phases in conversation; do not require a special plan mode |
 | Project file discovery and reads | Inspect bounded files through the host's authorized file tools | Use user-provided excerpts as scoped evidence; do not infer an empty or inspected repository |
-| Local shell | Use approved, bounded discovery commands only when useful | Use file tools or supplied evidence; shell execution is not required |
-| Official-source browsing or retrieval | Verify current releases and compatibility within permitted sources | Mark values and checks pending; distinguish unqueried, attempted, and inspected sources |
+| Local shell | Run only the [discovery commands](#discovery-commands) when useful | Use file tools or supplied evidence; shell execution is not required |
+| Official-source browsing or retrieval | Verify current releases and compatibility within permitted sources, using the raw registry or API response for versions and digests; a summarized, rendered, or truncated page is `partial` evidence at most | Mark values `TBD — verify` and record each source as `consulted`, `attempted`, or `not queried` |
 | Project file writes | Safely update the permitted document under the target root | Return the complete Markdown in conversation with the intended path and an explicit not-saved statement |
+
+Record verification and coverage with the
+[shared states](decision-criteria.md#verification-and-coverage-states).
 
 When evidence is missing, continue any useful work that does not depend on it.
 If the task materially needs a particular file or resource, request only the
@@ -34,6 +37,27 @@ relevant content through the available interface. An audit of supplied excerpts
 is a partial review of those excerpts, not a complete repository inspection.
 If no reliable current date is available, use an explicitly supplied date or
 mark the check date unknown; do not invent a dated verification record.
+
+## Discovery commands
+
+A shell, when available, is limited to commands that list or read files:
+
+- Allowed: listing and searching within the authorized root, such as `ls`,
+  `find`, `grep`, `git ls-files`, and `git rev-parse HEAD`, and reading individual files as text.
+  Other git commands, such as `git status`, `git diff`, or `git log`, are not
+  discovery commands: commands that refresh the index can invoke a
+  repository-configured program such as a `core.fsmonitor` hook.
+  Exclude [secret-bearing files](security.md#secret-bearing-files) from
+  content searches and reads; listing their paths is enough.
+- Not allowed: package managers, build tools, and their wrappers (for example
+  `./gradlew`, `./mvnw`, `mvn`, `npm ls`, `pip`, `uv`, or
+  `docker compose config`), and any command that runs project code or
+  evaluates project configuration, plugins, or scripts. Such commands can
+  execute repository-controlled code or contact registries.
+
+Resolved versions come only from lockfiles read as text. When no lockfile
+records a value, report the resolved version as `unknown`; do not run a
+resolver to obtain it. The same limits apply to equivalent host file tools.
 
 ## Paths and delivery
 

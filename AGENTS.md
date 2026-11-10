@@ -3,7 +3,7 @@
 ## Purpose and scope
 
 This repository contains the `stacks` agent skill and its maintainer tooling.
-Read [SKILL.md](SKILL.md) as the artifact being maintained. Its documentation-only
+Read [SKILL.md](skills/stacks/SKILL.md) as the artifact being maintained. Its documentation-only
 output contract governs use of the installed skill; it does not prevent an
 explicitly requested change to this repository.
 
@@ -15,9 +15,15 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
 
 ## Repository map
 
-- [SKILL.md](SKILL.md): activation, operating contract, modes, resource routing.
-- [references/](references/layers.md): focused guidance loaded on demand.
-- [templates/](templates/stack.md): templates for project documentation.
+- [skills/stacks/](skills/stacks/SKILL.md): the installable runtime package;
+  installers copy this directory, so it holds only runtime files.
+  - [SKILL.md](skills/stacks/SKILL.md): activation, operating contract, modes,
+    resource routing.
+  - [references/](skills/stacks/references/layers.md): focused guidance loaded
+    on demand.
+  - [templates/](skills/stacks/templates/stack.md): templates for project
+    documentation.
+  - `LICENSE`: byte-identical copy of the root license.
 - [validation/](validation/README.md): offline checks and acceptance scenarios.
 - [docs/maintainers/](docs/maintainers/ARCHITECTURE.md): design and release process.
 
@@ -28,9 +34,13 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
 2. Preserve both modes and their output paths: `docs/stack.md` and
    `docs/stack-audit.md`, resolved under the target project root.
 3. Update a rule and its dependent references, templates, and acceptance
-   scenarios together. The shared vocabularies are defined in
-   [decision criteria](references/decision-criteria.md) and
-   [security guidance](references/security.md).
+   scenarios together. The shared vocabularies are decision status, inventory
+   health, finding severity, verification state, and security-control status.
+   [Decision criteria](skills/stacks/references/decision-criteria.md) defines
+   decision status, inventory health, verification states, and version policy;
+   the [audit guide](skills/stacks/references/audit.md) defines finding
+   severity; [security guidance](skills/stacks/references/security.md) defines
+   control status.
 4. Maintain English public documentation and skill resources. The installed
    skill honors the user's conversation and document-language preferences.
 5. Use concrete language, descriptive placeholders, valid relative links,
@@ -42,21 +52,22 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
 7. Keep maintainer tools dependency-free unless a concrete requirement justifies
    a change. Do not add application scaffolding, deployment infrastructure, or
    ceremonial policy to a documentation skill.
-8. The project uses the [MIT license](LICENSE). Preserve its terms and notices;
-   licensing changes require an explicit owner decision.
+8. The project uses the [MIT license](LICENSE). Preserve its terms and notices,
+   and keep [skills/stacks/LICENSE](skills/stacks/LICENSE) identical to the
+   root file; licensing changes require an explicit owner decision.
 9. Keep the runtime agent-independent. Do not require host-specific tool names,
    UI modes, environment variables, install roots, or wrapper files. Maintain
-   the [capability fallbacks](references/compatibility.md) and test changes
+   the [capability fallbacks](skills/stacks/references/compatibility.md) and test changes
    against the portability scenarios as well as the stack workflows.
 
 ## Validation and review
 
-Run from the repository root:
+Run from the repository root with Python 3.11 or later:
 
 ```bash
 python3 -B validation/check_skill.py
 python3 -B -m unittest discover -s validation -p 'test_*.py'
-git diff --check
+git diff --check HEAD
 ```
 
 Select relevant [acceptance scenarios](validation/README.md) for behavior

@@ -7,7 +7,7 @@ and [security guidance](security.md) to the selected platform.
 
 Jump to: [Local environment](#deployment-model-and-local-environment-l8) ·
 [Containers](#application-container-patterns) · [CI/CD](#cicd-l9) ·
-[Cloud Run](#google-cloud-run) · [Microservices](#distributed-systems-and-microservices) ·
+[Managed containers](#managed-container-platforms) · [Microservices](#distributed-systems-and-microservices) ·
 [Infrastructure](#infrastructure-and-environments-l10)
 
 ## Deployment model and local environment (L8)
@@ -43,6 +43,10 @@ Jump to: [Local environment](#deployment-model-and-local-environment-l8) ·
   images record an exact version and digest; deploy the same built artifact
   across environments. Schedule updates and rebuilds, then scan the result.
   Do not use `:latest` as a reproducibility policy.
+- Pass build-time credentials only through BuildKit secret or SSH mounts;
+  never through `ARG`, `ENV`, or copied files, which persist in image layers or
+  metadata. Maintain a `.dockerignore` that excludes secret-bearing files and
+  local artifacts from the build context.
 - Verify image architecture, runtime support, port and listening interface,
   startup time, health protocol, resource limits, and graceful shutdown.
 
@@ -54,7 +58,9 @@ starting choice for a new GitHub repository. Separate validation from deployment
 1. **Pull requests:** resolve dependencies from locks or equivalent constraints,
    then run applicable lint, format, type, test, and build checks.
    Run integration services only in isolated approved environments. Apply
-   dependency review, secret scanning, and container scanning when relevant.
+   dependency review, secret scanning, and container scanning when relevant;
+   pin scanner actions, binaries, and images to a SHA or digest, and give
+   scanning jobs no deployment credentials or production secrets.
 2. **Untrusted contributions:** no production secrets, write credentials, or
    deployment. Do not execute untrusted code in privileged workflows. Scope
    token permissions, caches, and artifact access to their trust boundary.
@@ -72,10 +78,11 @@ host and team. Select remediation thresholds for scanner findings; record
 exceptions with scope, owner, and expiry. A recommended gate is not evidence
 that it already runs.
 
-## Google Cloud Run
+## Managed container platforms
 
-When Cloud Run is selected, verify its current runtime contract and the
-capabilities of the selected service, job, or worker model using permitted
+When a managed container platform is selected (for example Google Cloud Run,
+Amazon ECS on AWS Fargate, or Azure Container Apps), verify its current
+runtime contract and the capabilities of the selected service, job, or worker model using permitted
 official sources. Keep unavailable or disallowed lookups pending verification.
 
 - Distinguish request-serving HTTP/gRPC services from batch jobs, scheduled
@@ -85,14 +92,15 @@ official sources. Keep unavailable or disallowed lookups pending verification.
 - Choose region, minimum and maximum instances, concurrency, CPU, memory, and
   database connection budgets from latency, cost, availability, and workload.
   Do not prescribe a universal numeric concurrency or instance default.
-- Verify the required port, listening interface, and transport. HTTP, gRPC, TCP,
-  and stdio have different health and lifecycle requirements; use supported probes and avoid
+- Verify the required port, listening interface, and transport. HTTP, gRPC, and
+  TCP have different health and lifecycle requirements; use supported probes and avoid
   dependencies that cause cascading liveness restarts.
 - For gRPC, verify end-to-end HTTP/2 and cleartext container-side requirements,
   streaming limits, client reconnect behavior, and ingress configuration.
 - For remote MCP, verify SDK and protocol authorization and discovery,
-  supported clients, streaming, reconnects, session routing and state, and scaling.
-  An OIDC or IAP proxy, or an ordinary browser login, does not by itself establish
+  supported clients, streaming, reconnects, session routing and state, and scaling,
+  and apply the [MCP security requirements](security.md#mcp-servers).
+  An OIDC or identity-aware proxy, or an ordinary browser login, does not by itself establish
   protocol compatibility. Local stdio servers use a process lifecycle instead.
 - Use least-privilege identities and authenticate service-to-service calls;
   verify token audience and caller permissions. Network ingress restrictions
@@ -127,7 +135,9 @@ official sources. Keep unavailable or disallowed lookups pending verification.
 
 - Prefer versioned infrastructure when repeatability, multiple environments,
   compliance, or operational complexity justify it. Terraform is a starting
-  option; existing IaC standards or a small documented platform workflow may fit.
+  option; compare OpenTofu and verify the current license of the selected tool
+  and release against organization policy. Existing IaC standards or a small
+  documented platform workflow may fit.
 - Separate test, staging, and production according to blast radius and data policy.
   Small internal tools still need safe validation and recovery appropriate to
   their impact; do not infer safety from their audience alone.

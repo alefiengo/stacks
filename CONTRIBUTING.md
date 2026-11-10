@@ -7,7 +7,9 @@ dependencies or a running cloud environment.
 
 ## Make a focused change
 
-1. Read [SKILL.md](SKILL.md) and the resources relevant to your change.
+1. Read [SKILL.md](skills/stacks/SKILL.md) and the resources relevant to your
+   change. The runtime package lives in `skills/stacks/`; repository
+   documentation and tooling stay outside it.
 2. Describe the behavior being improved with a concrete request or project
    situation. Keep unrelated wording and technology changes separate.
 3. Update the instruction, reference, template and acceptance scenario together
@@ -25,9 +27,10 @@ Follow [SECURITY.md](SECURITY.md) for potentially sensitive reports.
 - **Questions and authorization:** ask one unresolved material decision at a
   time. Honor explicit delegation without interpreting silence as approval.
 - **Layers:** retain L1–L12 in outputs and explain `N/A` entries. Check the
-  applicability matrix when adding a profile or changing a dependency.
-- **Vocabulary:** keep decision status, inventory health, finding severity and
-  verification state distinct. Update their definitions and templates together.
+  layer applicability rules when adding a profile or changing a dependency.
+- **Vocabulary:** keep decision status, inventory health, finding severity,
+  verification state and security-control status distinct. Update their
+  definitions, templates and scenarios together.
 - **Evidence:** distinguish configuration from execution, declared from resolved
   or observed versions, and missing evidence from an established defect.
 - **Recommendations:** treat language defaults as contextual starting points.
@@ -44,15 +47,17 @@ when used.
 
 ## Validate locally
 
-From the repository root, with **Python 3.9+** and Git available:
+From the repository root, with **Python 3.11+** and Git available:
 
 ```bash
 python3 -B validation/check_skill.py
 python3 -B -m unittest discover -s validation -p 'test_*.py'
-git diff --check
+git diff --check HEAD
 ```
 
-The validator uses the Python standard library. No package installation,
+`git diff --check HEAD` also covers staged changes; run `git add -N <new files>`
+first so untracked files are included. The validator uses the
+Python standard library. No package installation,
 application build or network access is required. It checks the local skill
 structure and selected documentation contracts; it does not establish that an
 agent follows every instruction.
@@ -82,5 +87,5 @@ to scope, verification or workflow needs evidence that the affected scenarios
 still behave as intended.
 
 The project uses the [MIT License](LICENSE). Include only material you are
-entitled to contribute under those terms. Maintainer details are in the
-[licensing guide](docs/maintainers/LICENSING.md).
+entitled to contribute under those terms. If a contribution incorporates
+third-party text or code, identify its source and preserve its notices.
