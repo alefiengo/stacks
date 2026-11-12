@@ -17,9 +17,10 @@ or writes application code.
 | Compare two specific tools | "Using stacks: Prisma or Drizzle for this API?" | A recommendation in the conversation; no file is written |
 
 A request to implement a feature, scaffold a project, or debug does not start
-`stacks`. Use [`scaffold`](scaffold.md) to turn `docs/stack.md` into a project,
-and [`orchestration`](orchestration.md) to define the agent team that works on
-it.
+`stacks`. Use [`architecture`](architecture.md) to design the modules and
+conventions inside the code, [`scaffold`](scaffold.md) to turn `docs/stack.md`
+into a project, and [`orchestration`](orchestration.md) to define the agent
+team that works on it.
 
 ## Define a stack
 

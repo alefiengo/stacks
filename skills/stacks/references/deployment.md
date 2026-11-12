@@ -165,9 +165,11 @@ section covers execution and operations.
 - Start with a modular monolith when independent scaling, ownership, releases,
   or isolation do not justify distributed operations. If microservices are a
   firm requirement, honor it and document boundaries and operational costs.
-- When split, define service-owned data and bounded contexts; version contracts
-  and plan compatible evolution. Avoid shared mutable domain models and
-  cross-service database ownership that defeats independent releases.
+- When split, record which deployable units exist and that each owns its
+  storage; the detailed boundaries, data ownership, and contracts belong to an
+  architecture design (`docs/architecture.md`). Avoid shared mutable domain
+  models and cross-service database ownership that defeats independent
+  releases.
 - Choose monorepo or separate repos by ownership and release workflow, not
   team size alone. Shared tooling need not imply shared runtime/domain models.
 - Select synchronous calls when an immediate response or consistency contract

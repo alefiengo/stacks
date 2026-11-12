@@ -1,8 +1,9 @@
 # Security
 
 These skills guide an agent that documents a technology stack (`stacks`),
-generates a project skeleton from it (`scaffold`), and defines the agent team
-that works on the project (`orchestration`). Security reports are especially
+designs or audits the internal architecture (`architecture`), generates a
+project skeleton (`scaffold`), and defines the agent team that works on the
+project (`orchestration`). Security reports are especially
 useful when their instructions can cause an agent to exceed the authorized
 scope, expose sensitive data, widen another agent's permissions, or present an
 unsupported security conclusion as established fact.

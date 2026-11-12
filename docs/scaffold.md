@@ -13,6 +13,9 @@ registries. Review your agent's permission settings before using it.
 
 - A `docs/stack.md` in the project, usually written by [`stacks`](stacks.md).
   Without it, `scaffold` creates nothing and offers to run `stacks` first.
+- Optionally, a `docs/architecture.md` written by
+  [`architecture`](architecture.md): `scaffold` then also creates the empty
+  module folders it lists, and never changes that document.
 - Decisions you are happy with. Layers marked `open` are not implemented; the
   agent asks about them instead of choosing.
 - The tools the plan needs (for example `uv`, `pnpm`, or Docker). The plan

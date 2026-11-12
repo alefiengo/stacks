@@ -5,6 +5,35 @@ All notable changes to this project are recorded here. The format follows
 [Semantic Versioning](https://semver.org/). Unreleased work is not a published
 version.
 
+## Unreleased
+
+### Added
+
+- `architecture` skill: designs a project's internal architecture in
+  `docs/architecture.md` (quality drivers, modules and boundaries,
+  dependency rules with their enforcement, data ownership, integration
+  contracts, conventions, code structure, and a decision log) or audits an
+  existing codebase in `docs/architecture-audit.md`, reconstructing the
+  as-is map from code read as text. Depth scales from `compact` to
+  `extended`, which adds bounded contexts, diagrams, and decision records
+  in `docs/adr/`. Documentation only; uses `docs/stack.md` when present.
+  Install it with `npx skills add alefiengo/stacks --skill architecture`.
+  Acceptance scenarios AR01-AR34 cover it.
+
+### Changed
+
+- `scaffold` creates the plain module folders listed in `docs/architecture.md`
+  when it exists, asks about layouts that need manifests or build files, and
+  protects that document (scenarios SC28-SC29).
+- `orchestration` takes write scopes from the modules of
+  `docs/architecture.md` and states its conventions in role instructions
+  (scenarios OR36-OR37).
+- `stacks` L3 records the pattern, deployable units, and repository layout
+  only; module design and audits of module boundaries belong to
+  `architecture` (scenario S49). Skill descriptions state the boundaries.
+- The secret-bearing file block is shared by four skills, and the validator
+  checks the `docs/architecture.md` fields that other skills read.
+
 ## [0.1.0] - 2026-11-11
 
 First public release of `stacks`, `scaffold`, and `orchestration`.

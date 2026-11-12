@@ -15,12 +15,13 @@ from pathlib import Path
 from unittest.mock import patch
 
 from check_skill import (
-    DEPENDABOT, INPUT_CONTRACT, LAYER_FILES, LAYERS, ORCHESTRATION, ORCHESTRATION_INPUT_CONTRACT,
+    ARCHITECTURE, ARCHITECTURE_INTAKE, ARCHITECTURE_SCENARIOS, ARCHITECTURE_STACK_FIELDS,
+    ARCHITECTURE_TEMPLATE, DEPENDABOT, DOCUMENT_READERS, INPUT_CONTRACT, LAYERS, LAYER_FILES,
+    ORCHESTRATION, ORCHESTRATION_ARCHITECTURE_FIELDS, ORCHESTRATION_INPUT_CONTRACT,
     ORCHESTRATION_SCENARIOS, ORCHESTRATION_SKILL, ORCHESTRATION_STACK_FIELDS, PACKAGES,
-    PORTABILITY_SCENARIOS,
-    REQUIRED_FILES, ROOT, RUNTIME_RESOURCES, SCAFFOLD, SCAFFOLD_SCENARIOS, SCAFFOLD_SKILL,
-    SCENARIOS, SHARED_BLOCKS, SKILLS_DIR, STACK_FIELDS, STACK_TEMPLATE, STACKS, STACKS_SKILL,
-    WORKFLOW, Validator, main,
+    PORTABILITY_SCENARIOS, REQUIRED_FILES, ROOT, RUNTIME_RESOURCES, SCAFFOLD,
+    SCAFFOLD_ARCHITECTURE_FIELDS, SCAFFOLD_SCENARIOS, SCAFFOLD_SKILL, SCENARIOS, SHARED_BLOCKS,
+    SKILLS_DIR, STACKS, STACKS_SKILL, STACK_FIELDS, STACK_TEMPLATE, WORKFLOW, Validator, main,
 )
 
 COPIED_FROM_REPOSITORY = {WORKFLOW, DEPENDABOT}
@@ -30,7 +31,8 @@ SYNTHETIC_LICENSE = (
     'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.\n'
 )
 UNPRIVILEGED = getattr(os, 'geteuid', lambda: 0)() != 0
-SHARED_NAME, (SHARED_STACKS, SHARED_SCAFFOLD, SHARED_ORCHESTRATION) = next(iter(SHARED_BLOCKS.items()))
+SHARED_NAME, SHARED_PATHS = next(iter(SHARED_BLOCKS.items()))
+SHARED_STACKS, SHARED_SCAFFOLD, SHARED_ORCHESTRATION, SHARED_ARCHITECTURE = SHARED_PATHS
 SHARED_START = f'<!-- shared:{SHARED_NAME}:start -->'
 SHARED_END = f'<!-- shared:{SHARED_NAME}:end -->'
 SHARED_TEXT = f'{SHARED_START}\n- Synthetic shared rule.\n{SHARED_END}\n'
@@ -69,24 +71,31 @@ def synthetic_text(relative):
         scaffold = '\n'.join(f'| {identifier} | Synthetic |' for identifier in SCAFFOLD_SCENARIOS)
         orchestration = '\n'.join(f'| {identifier} | Synthetic |'
                                    for identifier in ORCHESTRATION_SCENARIOS)
+        architecture = '\n'.join(f'| {identifier} | Synthetic |'
+                                  for identifier in ARCHITECTURE_SCENARIOS)
         hosts = '\n'.join(f'| {identifier} | Synthetic |' for identifier in PORTABILITY_SCENARIOS)
         return (f'# Validation\n\n| ID | Scenario |\n| --- | --- |\n{rows}\n\n'
                 f'## Scaffold\n\n| ID | Scenario |\n| --- | --- |\n{scaffold}\n\n'
                 f'## Orchestration\n\n| ID | Scenario |\n| --- | --- |\n{orchestration}\n\n'
+                f'## Architecture\n\n| ID | Scenario |\n| --- | --- |\n{architecture}\n\n'
                 f'## Portability\n\n| ID | Host |\n| --- | --- |\n{hosts}\n')
     template = len(parts) > 3 and parts[0] == SKILLS_DIR and parts[2] == 'templates'
     placeholder = '\nProject: {{project_name}}.\n' if template else ''
+    template_fields = dict.fromkeys(field for template_path, _, fields, _ in DOCUMENT_READERS
+                                    if template_path == relative for field in fields)
+    contract_fields = dict.fromkeys(field for _, contract, fields, _ in DOCUMENT_READERS
+                                    if contract == relative for field in fields)
+    shared = SHARED_TEXT if relative in SHARED_PATHS else ''
     if relative in LAYER_FILES:
         rows = '\n'.join(f'| {layer} | Synthetic |' for layer in LAYERS)
-        stack_fields = dict.fromkeys(STACK_FIELDS + ORCHESTRATION_STACK_FIELDS)
-        fields = '\n\n'.join(stack_fields) + '\n' if relative == STACK_TEMPLATE else ''
+        fields = '\n\n'.join(template_fields) + '\n' if template_fields else ''
         return f'# Layers\n\n| Layer | Choice |\n| --- | --- |\n{rows}\n{placeholder}\n{fields}'
-    if relative in (INPUT_CONTRACT, ORCHESTRATION_INPUT_CONTRACT):
-        names = STACK_FIELDS if relative == INPUT_CONTRACT else ORCHESTRATION_STACK_FIELDS
-        fields = '\n'.join(f'- `{field}`' for field in names)
-        return f'# Input contract\n\n{fields}\n'
-    if relative in (SHARED_STACKS, SHARED_SCAFFOLD, SHARED_ORCHESTRATION):
-        return f'# {Path(relative).stem}\n\n{SHARED_TEXT}'
+    if template_fields:
+        fields = '\n\n'.join(template_fields)
+        return f'# {Path(relative).stem}\n{placeholder}\n{fields}\n'
+    if contract_fields or shared:
+        fields = '\n'.join(f'- `{field}`' for field in contract_fields)
+        return f'# {Path(relative).stem}\n\n{fields}\n\n{shared}'
     if relative.endswith('.md'):
         return f'# {Path(relative).stem}\n\nSynthetic fixture text.\n{placeholder}'
     return 'synthetic fixture\n'
@@ -622,7 +631,7 @@ class ValidatorTests(FixtureTestCase):
     # Contracts between packages
 
     def test_shared_block_must_appear_exactly_once(self):
-        for relative in (SHARED_STACKS, SHARED_SCAFFOLD, SHARED_ORCHESTRATION):
+        for relative in SHARED_PATHS:
             message = f'Shared block {SHARED_NAME} must appear exactly once: {relative}'
             cases = (
                 (SHARED_START + '\n', ''),
@@ -640,7 +649,7 @@ class ValidatorTests(FixtureTestCase):
                     self.assertFalse(any('differs' in error for error in errors), errors)
 
     def test_shared_block_must_be_identical(self):
-        for relative in (SHARED_SCAFFOLD, SHARED_ORCHESTRATION):
+        for relative in SHARED_PATHS[1:]:
             message = f'Shared block {SHARED_NAME} differs between {SHARED_STACKS} and {relative}'
             for new in ('- Synthetic shared rules.', '- Synthetic shared rule. ',
                         '- Synthetic shared rule.\n'):
@@ -714,7 +723,7 @@ class ValidatorTests(FixtureTestCase):
             '## 8. Security checklist',
             '## 10. Open decisions, assumptions and next steps',
         ))
-        self.assertEqual(ORCHESTRATION_SCENARIOS, [f'OR{number:02}' for number in range(1, 36)])
+        self.assertEqual(ORCHESTRATION_SCENARIOS, [f'OR{number:02}' for number in range(1, 38)])
         self.assertEqual(
             sorted(relative for relative in RUNTIME_RESOURCES if relative.startswith(f'{ORCHESTRATION}/')),
             sorted(f'{ORCHESTRATION}/{relative}' for relative in (
@@ -725,6 +734,67 @@ class ValidatorTests(FixtureTestCase):
     def test_orchestration_scenario_ids_need_two_digits(self):
         self.append('validation/README.md', '\n| OR100 | Three digits |\n')
         self.assert_invalid(ORCHESTRATION_SCENARIO_MESSAGE)
+
+    def test_architecture_contracts_are_pinned(self):
+        self.assertEqual(ARCHITECTURE_SCENARIOS, [f'AR{number:02}' for number in range(1, 35)])
+        self.assertEqual(SCAFFOLD_ARCHITECTURE_FIELDS, (
+            '## 5. Modules',
+            '| Module | Component | Responsibility | Owned data | Public interface | Depends on | Path | Status |',
+            '## 10. Code structure',
+            '| Component or module | Path | Layout rule |',
+            '## 12. Open decisions, assumptions and next steps',
+        ))
+        self.assertEqual(ORCHESTRATION_ARCHITECTURE_FIELDS,
+                         SCAFFOLD_ARCHITECTURE_FIELDS + ('## 9. Conventions',))
+        self.assertEqual(ARCHITECTURE_STACK_FIELDS, (
+            '## 1. Project profile',
+            '## 2. Stack summary',
+            '| # | Layer | Decision | Version | Status |',
+            '## 3. Decisions and rationale',
+            '**Authority and implementation state:**',
+            '## 8. Security checklist',
+            '## 10. Open decisions, assumptions and next steps',
+        ))
+        self.assertEqual(len(SHARED_PATHS), 4)
+        self.assertEqual(
+            sorted(relative for relative in RUNTIME_RESOURCES if relative.startswith(f'{ARCHITECTURE}/')),
+            sorted(f'{ARCHITECTURE}/{relative}' for relative in (
+                'references/safety.md', 'references/intake.md', 'references/design.md',
+                'references/audit.md', 'templates/architecture.md',
+                'templates/architecture-audit.md', 'templates/adr.md')))
+
+    def test_architecture_template_keeps_fields_read_by_other_skills(self):
+        field = '| Component or module | Path | Layout rule |'
+        self.replace(ARCHITECTURE_TEMPLATE, field, '| Item | Path | Rule |')
+        self.assert_invalid(f'Field read by scaffold is missing from {ARCHITECTURE_TEMPLATE}: {field}')
+        self.assert_invalid(
+            f'Field read by orchestration is missing from {ARCHITECTURE_TEMPLATE}: {field}')
+
+    def test_contracts_name_architecture_fields(self):
+        field = '## 9. Conventions'
+        self.replace(ORCHESTRATION_INPUT_CONTRACT, field, 'Conventions')
+        self.assert_invalid(
+            f'Field read by orchestration is not named in {ORCHESTRATION_INPUT_CONTRACT}: {field}')
+        build_fixture(self.root)
+        field = ARCHITECTURE_STACK_FIELDS[-2]
+        self.replace(ARCHITECTURE_INTAKE, field, 'Security checklist')
+        self.assert_invalid(f'Field read by architecture is not named in {ARCHITECTURE_INTAKE}: {field}')
+
+    def test_scaffold_contract_names_architecture_fields(self):
+        field = '## 10. Code structure'
+        self.replace(INPUT_CONTRACT, field, 'Code structure')
+        self.assert_invalid(f'Field read by scaffold is not named in {INPUT_CONTRACT}: {field}')
+
+    def test_architecture_scenarios_are_contiguous(self):
+        last = ARCHITECTURE_SCENARIOS[-1]
+        message = ('Architecture scenarios must be contiguous from AR01 and include '
+                   f'AR01..{last}')
+        for old, new in ((f'| {last} |', '| Removed |'),
+                         (f'| {last} | Synthetic |', f'| {last} | Synthetic |\n| AR99 | Gap |')):
+            with self.subTest(new=new):
+                build_fixture(self.root)
+                self.replace('validation/README.md', old, new)
+                self.assert_invalid(message)
 
     def test_missing_orchestration_resource_fails(self):
         relative = f'{ORCHESTRATION}/references/hosts/codex.md'
@@ -865,7 +935,8 @@ class ValidatorTests(FixtureTestCase):
         status, stdout, stderr = self.run_main(self.root)
         self.assertEqual((status, stderr), (0, ''))
         size = len('Synthetic skill description for validator tests.')
-        self.assertRegex(stdout, rf'\AFrontmatter: orchestration, MIT, description {size} characters\n'
+        self.assertRegex(stdout, rf'\AFrontmatter: architecture, MIT, description {size} characters\n'
+                                 rf'Frontmatter: orchestration, MIT, description {size} characters\n'
                                  rf'Frontmatter: scaffold, MIT, description {size} characters\n'
                                  rf'Frontmatter: stacks, MIT, description {size} characters\n'
                                  r'PASS: \d+ static checks across \d+ Markdown files\n'

@@ -1,17 +1,18 @@
 # Skill architecture
 
-The repository hosts three independent agent skills with different execution
+The repository hosts four independent agent skills with different execution
 contracts:
 
-| | `stacks` | `scaffold` | `orchestration` |
-|---|---|---|---|
-| Purpose | Decide and document a technology stack | Execute an approved `docs/stack.md` | Design the agent team for the decided stack |
-| Input | Requirements or repository evidence | An existing `docs/stack.md` | An existing `docs/stack.md`, plus the project tree |
-| Output | `docs/stack.md`, `docs/stack-audit.md` | Project files, plus implementation state in `docs/stack.md` | `docs/agents.md`, then approved agent files and a lead block in `AGENTS.md` |
-| Executes commands | Never | Yes, after explicit approval of a plan | Only checksums, version queries, and approved file checks |
-| Network | Official sources for verification | Verification plus package installation | Official host documentation |
+| | `stacks` | `architecture` | `scaffold` | `orchestration` |
+|---|---|---|---|---|
+| Purpose | Decide and document a technology stack | Design or audit the internal architecture | Execute an approved `docs/stack.md` | Design the agent team for the project |
+| Input | Requirements or repository evidence | Requirements, `docs/stack.md` when present, repository evidence | An existing `docs/stack.md`, and `docs/architecture.md` when present | An existing `docs/stack.md`, `docs/architecture.md` when present, the project tree |
+| Output | `docs/stack.md`, `docs/stack-audit.md` | `docs/architecture.md`, `docs/architecture-audit.md`, `docs/adr/` | Project files, plus implementation state in `docs/stack.md` | `docs/agents.md`, then approved agent files and a lead block in `AGENTS.md` |
+| Executes commands | Never | Never | Yes, after explicit approval of a plan | Only checksums, version queries, and approved file checks |
+| Network | Official sources for verification | Official sources when a claim needs one | Verification plus package installation | Official host documentation |
 
 User-facing descriptions are in the [stacks guide](../stacks.md), the
+[architecture guide](../architecture.md), the
 [scaffold guide](../scaffold.md), and the
 [orchestration guide](../orchestration.md). This document explains how the
 skills are built and why.
@@ -25,6 +26,11 @@ skills/
 │   ├── LICENSE             # byte-identical copy of the root license
 │   ├── references/         # loaded on demand; stacks/ holds language defaults
 │   └── templates/          # docs/stack.md and docs/stack-audit.md
+├── architecture/
+│   ├── SKILL.md            # activation, contract, modes, routing
+│   ├── LICENSE
+│   ├── references/         # safety, intake and depth, design guide, audit guide
+│   └── templates/          # docs/architecture.md, the audit, decision records
 ├── scaffold/
 │   ├── SKILL.md            # activation, contract, phases, routing
 │   ├── LICENSE
@@ -52,7 +58,7 @@ and each works when the others are absent. `scaffold` and `orchestration`
 without a `docs/stack.md` offer to run `stacks` rather than referring to its
 files.
 
-All three runtimes are independent of a particular agent or API. Native skill
+All runtimes are independent of a particular agent or API. Native skill
 loading, file tools, retrieval, structured questions, and planning UI are
 capabilities the host may provide. Missing capabilities use explicit
 fallbacks: ordinary conversation, supplied evidence, pending external checks,
@@ -136,6 +142,36 @@ ends at "builds, tests pass, CI defined"; no commits; local image builds when
 planned. After an independent review, `scaffold` also appends labeled rows to
 the version log of `docs/stack.md`, so each verified version stays traceable.
 
+## architecture
+
+`architecture` designs or audits the inside of a system and writes
+documentation only, under the same inspection limits as `stacks`. It sits
+between `stacks` and `scaffold`: technology and the L3 pattern come from
+`docs/stack.md` when present, and the design details modules, dependency
+rules, data ownership, contracts, conventions, and code structure.
+
+- **Depth scales with the project.** `compact`, `standard`, and `extended`
+  share one twelve-section template, so a document can deepen without being
+  restructured; sections outside the depth say so in one line. Decision
+  records under `docs/adr/` are written only at `extended` depth or on
+  request.
+- **Boundary with `stacks`.** L3 records the pattern and repository layout;
+  `architecture` owns everything inside it. Both descriptions state the
+  split, so neither skill hijacks the other's requests.
+- **Usable alone.** Mode B documents and audits an existing codebase without
+  any other skill, the common case for a public user; without
+  `docs/stack.md`, Mode A infers the technology from manifests or asks.
+- **Evidence limits.** The dependency graph comes from imports read as text,
+  never from running analyzers, and audits state that limit.
+- **Feeds the next steps.** `scaffold` creates the module paths of its code
+  structure section; `orchestration` turns modules into write scopes and
+  conventions into role instructions. Both read the document optionally and
+  never change it.
+
+Owner decisions of 2026-11-11: the skill is named `architecture`, sits
+between `stacks` and `scaffold`, has design and audit modes, scales its depth
+to the project, and is read optionally by `scaffold` and `orchestration`.
+
 ## orchestration
 
 `orchestration` defines who works on the project; it never runs the team.
@@ -180,13 +216,14 @@ and host files only after approval, and covers Claude Code and Codex.
 
 ## Contracts between the skills
 
-Two contracts are shared by value, not by link, and the validator keeps them
+Three contracts are shared by value, not by link, and the validator keeps them
 consistent:
 
 - **Secret-bearing file patterns.** A marked block in the `stacks`
   [security guidance](../../skills/stacks/references/security.md), the
-  `scaffold` execution safety reference, and the `orchestration` safety
-  reference must be byte-identical. It governs which files no skill opens.
+  `scaffold` execution safety reference, and the `orchestration` and
+  `architecture` safety references must be byte-identical. It governs which
+  files no skill opens.
 - **`docs/stack.md` fields.** `scaffold` reads the stack summary, dependency
   specification, local development, CI/CD, version verification log, and open
   decisions sections, and writes only the implementation-state fields
@@ -197,7 +234,14 @@ consistent:
   redefined, by `scaffold`. `orchestration` reads a further set of fields
   (project profile, decisions and rationale, commands, security checklist)
   and writes none; its input contract names each one, and the validator
-  checks them against the template too.
+  checks them against the template too. `architecture` reads the profile,
+  summary, decisions, security checklist, and open decisions, and also
+  writes none.
+- **`docs/architecture.md` fields.** `scaffold` reads the modules, code
+  structure, and open decisions sections; `orchestration` reads those and
+  the conventions section. Each named heading and table header must exist in
+  the [architecture template](../../skills/architecture/templates/architecture.md),
+  and the validator checks both readers.
 
 `scaffold` execution and `orchestration` host files are never covered by an
 authorization delegated in another skill; each needs approval of its concrete

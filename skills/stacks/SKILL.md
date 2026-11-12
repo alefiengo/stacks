@@ -4,15 +4,17 @@ license: MIT
 description: >
   Define, compare, or audit a project's technology stack and document the
   decisions. Use when asked to choose technologies, recommend a stack,
-  define the stack, audit our stack, or review stack architecture. Covers
+  define the stack, audit our stack, or review the stack's technology
+  choices. Covers
   runtimes, frameworks, data, testing, security, containers, CI/CD,
   deployment, and observability for REST, MCP, GraphQL, gRPC, web,
   microservices, and worker and batch jobs. Curated defaults cover Python,
   TypeScript/Node, Java, Go, and .NET. Produces docs/stack.md or
   docs/stack-audit.md. Do not activate solely for implementation,
-  scaffolding, debugging, or designing the coding-agent team that works on
-  the project. Do not activate to
-  review an agent skill's or prompt package's own instructions or behavior.
+  scaffolding, debugging, designing module boundaries and conventions inside
+  the code, or designing the coding-agent team that works on the project.
+  Do not activate to review an agent skill's or prompt package's own
+  instructions or behavior.
 ---
 
 # Stacks

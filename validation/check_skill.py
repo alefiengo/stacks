@@ -18,6 +18,15 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = 'skills'
 # The exact set of published packages; an extra or missing directory fails.
 PACKAGE_RESOURCES = {
+    'architecture': (
+        'references/safety.md',
+        'references/intake.md',
+        'references/design.md',
+        'references/audit.md',
+        'templates/architecture.md',
+        'templates/architecture-audit.md',
+        'templates/adr.md',
+    ),
     'orchestration': (
         'references/input-contract.md',
         'references/design.md',
@@ -56,6 +65,7 @@ PACKAGES = tuple(sorted(PACKAGE_RESOURCES))
 STACKS = f'{SKILLS_DIR}/stacks'
 SCAFFOLD = f'{SKILLS_DIR}/scaffold'
 ORCHESTRATION = f'{SKILLS_DIR}/orchestration'
+ARCHITECTURE = f'{SKILLS_DIR}/architecture'
 STACKS_SKILL = f'{STACKS}/SKILL.md'
 SCAFFOLD_SKILL = f'{SCAFFOLD}/SKILL.md'
 ORCHESTRATION_SKILL = f'{ORCHESTRATION}/SKILL.md'
@@ -87,12 +97,14 @@ TEMP_PREFIXES = ('.trial-', '.checker-negative-', '.check-test-')
 MARKDOWN_SUFFIXES = {'.md', '.markdown'}
 MAX_RESOURCE_BYTES = 100_000
 MAX_SKILL_LINES = 250
-# Scenario IDs are contiguous from S01, SC01, and OR01; these are the minimum counts that must remain.
-MIN_SCENARIOS = 48
+# Scenario IDs are contiguous from S01, SC01, OR01, and AR01; these are the minimum counts that must remain.
+MIN_SCENARIOS = 49
 SCENARIOS = [f'S{number:02}' for number in range(1, MIN_SCENARIOS + 1)]
-MIN_SCAFFOLD_SCENARIOS = 13
+MIN_SCAFFOLD_SCENARIOS = 29
 SCAFFOLD_SCENARIOS = [f'SC{number:02}' for number in range(1, MIN_SCAFFOLD_SCENARIOS + 1)]
-MIN_ORCHESTRATION_SCENARIOS = 35
+MIN_ORCHESTRATION_SCENARIOS = 37
+MIN_ARCHITECTURE_SCENARIOS = 34
+ARCHITECTURE_SCENARIOS = [f'AR{number:02}' for number in range(1, MIN_ARCHITECTURE_SCENARIOS + 1)]
 ORCHESTRATION_SCENARIOS = [f'OR{number:02}'
                            for number in range(1, MIN_ORCHESTRATION_SCENARIOS + 1)]
 PORTABILITY_SCENARIOS = [f'U{number:02}' for number in range(1, 9)]
@@ -104,6 +116,8 @@ LAYER_FILES = (
 STACK_TEMPLATE = f'{STACKS}/templates/stack.md'
 INPUT_CONTRACT = f'{SCAFFOLD}/references/input-contract.md'
 ORCHESTRATION_INPUT_CONTRACT = f'{ORCHESTRATION}/references/input-contract.md'
+ARCHITECTURE_INTAKE = f'{ARCHITECTURE}/references/intake.md'
+ARCHITECTURE_TEMPLATE = f'{ARCHITECTURE}/templates/architecture.md'
 # Fields of docs/stack.md that scaffold reads: the stacks template must keep them
 # and the scaffold input contract must name them literally.
 STACK_FIELDS = (
@@ -132,16 +146,40 @@ ORCHESTRATION_STACK_FIELDS = (
     '## 8. Security checklist',
     '## 10. Open decisions, assumptions and next steps',
 )
-# Each reader of docs/stack.md: (input contract, fields it must name, skill name).
-STACK_READERS = (
-    (INPUT_CONTRACT, STACK_FIELDS, 'scaffold'),
-    (ORCHESTRATION_INPUT_CONTRACT, ORCHESTRATION_STACK_FIELDS, 'orchestration'),
+# Fields of docs/stack.md that architecture reads.
+ARCHITECTURE_STACK_FIELDS = (
+    '## 1. Project profile',
+    '## 2. Stack summary',
+    '| # | Layer | Decision | Version | Status |',
+    '## 3. Decisions and rationale',
+    '**Authority and implementation state:**',
+    '## 8. Security checklist',
+    '## 10. Open decisions, assumptions and next steps',
+)
+# Fields of docs/architecture.md that scaffold and orchestration read.
+SCAFFOLD_ARCHITECTURE_FIELDS = (
+    '## 5. Modules',
+    '| Module | Component | Responsibility | Owned data | Public interface | Depends on | Path | Status |',
+    '## 10. Code structure',
+    '| Component or module | Path | Layout rule |',
+    '## 12. Open decisions, assumptions and next steps',
+)
+ORCHESTRATION_ARCHITECTURE_FIELDS = SCAFFOLD_ARCHITECTURE_FIELDS + ('## 9. Conventions',)
+# Each reader of a shared document: (template, input contract, fields it must name, skill name).
+DOCUMENT_READERS = (
+    (STACK_TEMPLATE, INPUT_CONTRACT, STACK_FIELDS, 'scaffold'),
+    (STACK_TEMPLATE, ORCHESTRATION_INPUT_CONTRACT, ORCHESTRATION_STACK_FIELDS, 'orchestration'),
+    (STACK_TEMPLATE, ARCHITECTURE_INTAKE, ARCHITECTURE_STACK_FIELDS, 'architecture'),
+    (ARCHITECTURE_TEMPLATE, INPUT_CONTRACT, SCAFFOLD_ARCHITECTURE_FIELDS, 'scaffold'),
+    (ARCHITECTURE_TEMPLATE, ORCHESTRATION_INPUT_CONTRACT, ORCHESTRATION_ARCHITECTURE_FIELDS,
+     'orchestration'),
 )
 # Rules duplicated between packages; the text between the markers must be identical.
 SHARED_BLOCKS = {
     'secret-bearing-files': (f'{STACKS}/references/security.md',
                              f'{SCAFFOLD}/references/execution-safety.md',
-                             f'{ORCHESTRATION}/references/safety.md'),
+                             f'{ORCHESTRATION}/references/safety.md',
+                             f'{ARCHITECTURE}/references/safety.md'),
 }
 OBSOLETE_WORDING = ('every version below was', 'always include some', 'let me decide',
                     'junit 5', 'fastmcp 2.x', 'postgres:17')
@@ -701,12 +739,12 @@ class Validator:
                 if None not in (reference, block):
                     self.check(reference == block,
                                f'Shared block {name} differs between {first} and {other}')
-        template = self.rendered(STACK_TEMPLATE)
-        for contract_path, fields, reader in STACK_READERS:
+        for template_path, contract_path, fields, reader in DOCUMENT_READERS:
+            template = self.rendered(template_path)
             contract = self.docs.get(contract_path, '')
             for field in fields:
                 self.check(field in template,
-                           f'Field read by {reader} is missing from {STACK_TEMPLATE}: {field}')
+                           f'Field read by {reader} is missing from {template_path}: {field}')
                 self.check(field in contract,
                            f'Field read by {reader} is not named in {contract_path}: {field}')
         scenarios = self.rendered('validation/README.md')
@@ -724,6 +762,11 @@ class Validator:
                    and found == [f'OR{number:02}' for number in range(1, len(found) + 1)],
                    'Orchestration scenarios must be contiguous from OR01 and include '
                    f'OR01..OR{MIN_ORCHESTRATION_SCENARIOS:02}')
+        found = re.findall(r'^\| (AR\d+) \|', scenarios, re.M)
+        self.check(len(found) >= MIN_ARCHITECTURE_SCENARIOS
+                   and found == [f'AR{number:02}' for number in range(1, len(found) + 1)],
+                   'Architecture scenarios must be contiguous from AR01 and include '
+                   f'AR01..AR{MIN_ARCHITECTURE_SCENARIOS:02}')
         self.check(re.findall(r'^\| (U\d+) \|', scenarios, re.M) == PORTABILITY_SCENARIOS,
                    'Portability scenarios must list U01..U08 exactly once and in order')
 

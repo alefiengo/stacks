@@ -2,12 +2,15 @@
 
 ## Purpose and scope
 
-This repository contains three agent skills and their maintainer tooling.
+This repository contains four agent skills and their maintainer tooling.
 `stacks` defines and audits technology stacks and produces documentation only.
+`architecture` designs or audits a project's internal architecture and also
+produces documentation only.
 `scaffold` executes an approved plan derived from `docs/stack.md` and generates
 a project skeleton. `orchestration` designs the agent team for that stack in
 `docs/agents.md` and writes approved agent files. Read the
 [stacks SKILL.md](skills/stacks/SKILL.md), the
+[architecture SKILL.md](skills/architecture/SKILL.md), the
 [scaffold SKILL.md](skills/scaffold/SKILL.md), and the
 [orchestration SKILL.md](skills/orchestration/SKILL.md) as the artifacts being
 maintained.
@@ -31,6 +34,15 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
   - [templates/](skills/stacks/templates/stack.md): templates for project
     documentation.
   - `LICENSE`: byte-identical copy of the root license.
+- [skills/architecture/](skills/architecture/SKILL.md): the installable
+  architecture skill, self-contained like the others.
+  - [SKILL.md](skills/architecture/SKILL.md): activation, contract, modes,
+    resource routing.
+  - [references/](skills/architecture/references/design.md): safety, intake
+    and depth, design guide, and audit guide.
+  - [templates/](skills/architecture/templates/architecture.md):
+    `docs/architecture.md`, the audit report, and decision records.
+  - `LICENSE`: byte-identical copy of the root license.
 - [skills/scaffold/](skills/scaffold/SKILL.md): the installable generator
   skill, self-contained like `stacks`.
   - [SKILL.md](skills/scaffold/SKILL.md): activation, execution contract,
@@ -50,8 +62,11 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
     and the materialization report.
   - `LICENSE`: byte-identical copy of the root license.
 - [validation/](validation/README.md): offline checks and acceptance scenarios.
-- [docs/](docs/stacks.md): user guides for [stacks](docs/stacks.md),
-  [scaffold](docs/scaffold.md), and [orchestration](docs/orchestration.md),
+- [docs/](docs/stacks.md): user guides (here `docs/architecture.md` is the
+  guide to the `architecture` skill, not a design document) for
+  [stacks](docs/stacks.md),
+  [architecture](docs/architecture.md), [scaffold](docs/scaffold.md), and
+  [orchestration](docs/orchestration.md),
   and [installation](docs/INSTALLATION.md).
 - [docs/maintainers/](docs/maintainers/ARCHITECTURE.md): design and release process.
 
@@ -71,7 +86,10 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
    `docs/stack.md`, never changes it, never runs agents, package managers, or
    git, writes host files only after an explicitly approved plan, and never
    writes host settings or user-level agent directories. Adding a host is a
-   decision for the owner.
+   decision for the owner. Preserve `architecture`'s contract: documentation
+   only (`docs/architecture.md`, `docs/architecture-audit.md`, `docs/adr/`),
+   no project commands, technology taken from `docs/stack.md` or manifests,
+   and depth scaled to the project.
 3. Update a rule and its dependent references, templates, and acceptance
    scenarios together. The shared vocabularies are decision status, inventory
    health, finding severity, verification state, and security-control status.
@@ -79,13 +97,16 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
    decision status, inventory health, verification states, and version policy;
    the [audit guide](skills/stacks/references/audit.md) defines finding
    severity; [security guidance](skills/stacks/references/security.md) defines
-   control status. Two contracts span the skills and are checked by the
+   control status. Three contracts span the skills and are checked by the
    validator: the shared block of secret-bearing file patterns, which stays
    identical in [security guidance](skills/stacks/references/security.md), the
-   `scaffold` execution safety reference, and the `orchestration` safety
-   reference, and the `docs/stack.md` fields that `scaffold` and
-   `orchestration` read, which must exist in the
-   [stack template](skills/stacks/templates/stack.md). The skills do not link
+   `scaffold` execution safety reference, and the `orchestration` and
+   `architecture` safety references; the `docs/stack.md` fields that
+   `scaffold`, `orchestration`, and `architecture` read, which must exist in
+   the [stack template](skills/stacks/templates/stack.md); and the
+   `docs/architecture.md` fields that `scaffold` and `orchestration` read,
+   which must exist in the
+   [architecture template](skills/architecture/templates/architecture.md). The skills do not link
    to each other; change a shared contract in every place.
 4. Maintain English public documentation and skill resources. The installed
    skill honors the user's conversation and document-language preferences.
@@ -100,8 +121,9 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
    ceremonial policy to the `stacks` documentation skill.
 8. The project uses the [MIT license](LICENSE). Preserve its terms and notices,
    and keep [skills/stacks/LICENSE](skills/stacks/LICENSE) identical to the
-   root file, and likewise [skills/scaffold/LICENSE](skills/scaffold/LICENSE)
-   and [skills/orchestration/LICENSE](skills/orchestration/LICENSE);
+   root file, and likewise [skills/scaffold/LICENSE](skills/scaffold/LICENSE),
+   [skills/orchestration/LICENSE](skills/orchestration/LICENSE), and
+   [skills/architecture/LICENSE](skills/architecture/LICENSE);
    licensing changes require an explicit owner decision.
 9. Keep the runtime agent-independent. Do not require host-specific tool names,
    UI modes, environment variables, install roots, or wrapper files. Maintain

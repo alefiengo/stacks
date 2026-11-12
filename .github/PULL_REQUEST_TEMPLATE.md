@@ -10,6 +10,6 @@ scenario reviews, and actual agent exercises. State anything not verified.
 
 ## Compatibility
 
-Describe affected skills (`stacks`, `scaffold`, `orchestration`), modes, references,
+Describe affected skills (`stacks`, `architecture`, `scaffold`, `orchestration`), modes, references,
 templates (under `skills/<name>/`), shared vocabularies or contracts between
 the skills, or installation behavior. Write "None" when no compatibility change applies.

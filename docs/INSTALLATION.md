@@ -2,36 +2,40 @@
 
 [Back to the README](../README.md)
 
-This repository provides three independent skills: `stacks` (documentation
-only), `scaffold` (executes an approved plan), and `orchestration` (designs the
-agent team and writes approved agent files). Install any of them in the
+This repository provides four independent skills: `stacks` and
+`architecture` (documentation only), `scaffold` (executes an approved plan),
+and `orchestration` (designs the agent team and writes approved agent
+files). Install any of them in the
 coding agent you use for development. The installer selects the destination;
 each skill's workflow stays the same across agents.
 
 | Skill | Install it when | Permissions it needs |
 |---|---|---|
 | `stacks` | You want to define or audit a technology stack | Reads the project and writes `docs/stack.md` or `docs/stack-audit.md`; never executes project commands |
+| `architecture` | You want to design or audit modules, boundaries, and conventions | Reads the project and writes `docs/architecture.md`, `docs/architecture-audit.md`, or `docs/adr/`; never executes project commands |
 | `scaffold` | You have a `docs/stack.md` and want the project skeleton built | Runs commands, installs packages from public registries, and writes project files; never commits, pushes, or deploys |
 | `orchestration` | You have a `docs/stack.md` and want the agent team defined | Reads the project and writes `docs/agents.md`, then approved agent files under `.claude/agents/`, `.codex/agents/`, and a block in `AGENTS.md`; never runs agents or changes host settings |
 
-The recommended flow is `stacks` first, then `scaffold`, then
-`orchestration`. `scaffold` and `orchestration` require an existing
-`docs/stack.md` and offer to run `stacks` when it is missing.
+The recommended flow is `stacks`, then `architecture`, then `scaffold`, then
+`orchestration`; each skill also works alone. `scaffold` and `orchestration`
+require an existing `docs/stack.md` and offer to run `stacks` when it is
+missing; they use `docs/architecture.md` when it exists.
 Installing `scaffold` lets the agent run generators and package managers, so
 review your agent's permission settings before using it.
 
 ## Quick start
 
-From your application project, install the three skills:
+From your application project, install the four skills:
 
 ```bash
-npx skills add alefiengo/stacks --skill stacks scaffold orchestration
+npx skills add alefiengo/stacks --skill stacks architecture scaffold orchestration
 ```
 
 Or install only the one you need:
 
 ```bash
 npx skills add alefiengo/stacks --skill stacks
+npx skills add alefiengo/stacks --skill architecture
 npx skills add alefiengo/stacks --skill scaffold
 npx skills add alefiengo/stacks --skill orchestration
 ```
@@ -43,8 +47,9 @@ use the [manual procedure](#manual-installation).
 ## Choose an agent
 
 Each command below installs `stacks` into the current project. Use
-`--skill scaffold` or `--skill orchestration` for the other skills, or
-`--skill stacks scaffold orchestration` for all three. Add `-g` for user scope.
+`--skill architecture`, `--skill scaffold`, or `--skill orchestration` for the
+other skills, or `--skill stacks architecture scaffold orchestration` for all
+four. Add `-g` for user scope.
 By default the installer links each agent directory to a canonical copy of the
 skill; add `--copy` to create independent copies, for example where symlinks
 are not supported. A copy needs a new installation or update to receive changes.
@@ -92,7 +97,7 @@ Agent identifiers and destinations follow the
 
 ## Installation paths
 
-The installer places `stacks/`, `scaffold/`, and `orchestration/` under these directories (a link to the
+The installer places `stacks/`, `architecture/`, `scaffold/`, and `orchestration/` under these directories (a link to the
 canonical copy by default, or a copy with `--copy`):
 
 | Agent | Project directory | User directory (`-g`) |
@@ -123,6 +128,16 @@ Define mode produces `docs/stack.md`; audit mode produces
 `docs/stack-audit.md`. Add `Choose sensible defaults and complete the document
 autonomously, recording assumptions` to delegate the decisions.
 
+To design the modules, boundaries, and conventions, or to audit an existing
+codebase:
+
+```text
+Use the architecture skill to design the architecture for this project.
+```
+
+`architecture` writes `docs/architecture.md` at a depth that fits the
+project, or `docs/architecture-audit.md` in audit mode.
+
 Once `docs/stack.md` is reviewed, ask for the project skeleton:
 
 ```text
@@ -151,12 +166,13 @@ Read .agents/skills/stacks/SKILL.md and use it to audit this project's stack.
 ```
 
 Use the actual installed path; Claude Code's project path starts with
-`.claude/skills/`. For the other skills, point to `scaffold/SKILL.md` or
-`orchestration/SKILL.md` instead. Pi also supports an explicit directory on
+`.claude/skills/`. For the other skills, point to `architecture/SKILL.md`,
+`scaffold/SKILL.md`, or `orchestration/SKILL.md` instead. Pi also supports an explicit directory on
 startup:
 
 ```bash
 pi --skill .agents/skills/stacks
+pi --skill .agents/skills/architecture
 pi --skill .agents/skills/scaffold
 pi --skill .agents/skills/orchestration
 ```
@@ -172,10 +188,11 @@ No installer runtime is needed for file copying:
    ```
 
 2. Create a directory named after each skill you want (`stacks/`,
-   `scaffold/`, `orchestration/`) under your agent's
+   `architecture/`, `scaffold/`, `orchestration/`) under your agent's
    [project or user skill directory](#installation-paths).
 3. Copy the contents of each skill's repository directory
-   (`skills/stacks/`, `skills/scaffold/`, `skills/orchestration/`) into the
+   (`skills/stacks/`, `skills/architecture/`, `skills/scaffold/`,
+   `skills/orchestration/`) into the
    matching directory. From the
    directory that contains `stacks-source`, set `DEST` to the destination from
    the [paths table](#installation-paths) (the example is a Codex project
@@ -191,6 +208,12 @@ No installer runtime is needed for file copying:
    DEST=/path/to/application-project/.agents/skills/scaffold
    mkdir -p "$DEST"
    cp -R stacks-source/skills/scaffold/. "$DEST"/
+   ```
+
+   ```bash
+   DEST=/path/to/application-project/.agents/skills/architecture
+   mkdir -p "$DEST"
+   cp -R stacks-source/skills/architecture/. "$DEST"/
    ```
 
    ```bash
@@ -211,6 +234,14 @@ No installer runtime is needed for file copying:
 
    ```text
    scaffold/
+   ├── SKILL.md
+   ├── LICENSE
+   ├── references/
+   └── templates/
+   ```
+
+   ```text
+   architecture/
    ├── SKILL.md
    ├── LICENSE
    ├── references/
@@ -245,6 +276,7 @@ npx skills check
 
 # Update the installed skills
 npx skills update stacks
+npx skills update architecture
 npx skills update scaffold
 npx skills update orchestration
 ```
@@ -258,8 +290,7 @@ and [command reference](https://github.com/vercel-labs/skills/blob/main/docs/com
 - **Skill not found:** check the project, selected agent, installation scope,
   and SKILL.md location; start a new session after installing.
 - **Reference not found:** restore the complete `references/` and `templates/`
-  directories from `skills/stacks/`, `skills/scaffold/`, or
-  `skills/orchestration/`. SKILL.md alone is not the full package.
+  directories from the skill's own `skills/<name>/` directory. SKILL.md alone is not the full package.
 - **`scaffold` or `orchestration` asks for `docs/stack.md`:** the file is
   required. Run `stacks` first, or place an approved `docs/stack.md` in the
   target project.

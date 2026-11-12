@@ -77,10 +77,12 @@ Jump to: [Approval](#approval) · [Scope](#scope-and-version-control) ·
   generator creates by itself are reported. Anything else, including a file
   written by hand that the plan does not name, is a new checkpoint.
 - Formatters, fixers, and generators write only to paths the plan names,
-  never to the whole root: the root holds `docs/stack.md` and installed agent
-  skills, which `scaffold` must not rewrite. Restrict a tool's own file
+  never to the whole root: the root holds `docs/stack.md`,
+  `docs/architecture.md`, and installed agent skills, which `scaffold` must
+  not rewrite. Restrict a tool's own file
   selection in its configuration when it would otherwise reach them. In
-  Phase 0, record checksums of `docs/stack.md`, of agent skill and agent
+  Phase 0, record checksums of `docs/stack.md`, of `docs/architecture.md` when
+  present, of agent skill and agent
   configuration directories, and of the root agent instruction files
   (`AGENTS.md`, `CLAUDE.md`) for the Phase 4 protected-path check. A
   generator never changes existing ones. A copy a generator would add is

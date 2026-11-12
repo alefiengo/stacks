@@ -3,13 +3,14 @@
 Changes should make stack decisions clearer, recommendations more coherent,
 audits better supported by evidence, generated project skeletons more
 faithful to the approved stack, or agent teams better fitted to it. This
-repository contains three agent skills, `stacks`, `scaffold`, and
-`orchestration`, and their documentation; contributing does not require
+repository contains four agent skills, `stacks`, `architecture`, `scaffold`,
+and `orchestration`, and their documentation; contributing does not require
 application dependencies or a running cloud environment.
 
 ## Make a focused change
 
 1. Read the [stacks SKILL.md](skills/stacks/SKILL.md), the
+   [architecture SKILL.md](skills/architecture/SKILL.md), the
    [scaffold SKILL.md](skills/scaffold/SKILL.md), or the
    [orchestration SKILL.md](skills/orchestration/SKILL.md) and the resources
    relevant to your change. Each runtime package lives in its own `skills/<name>/`
@@ -26,8 +27,11 @@ Follow [SECURITY.md](SECURITY.md) for potentially sensitive reports.
 
 ## Preserve the skill's contracts
 
-- **Modes and activation:** distinguish stack definition from stack audit.
-  Implementation and scaffolding requests alone should not start the interview.
+- **Modes and activation:** distinguish stack definition from stack audit,
+  and architecture design from architecture audit. Implementation and
+  scaffolding requests alone should not start either interview. In this
+  repository, `docs/architecture.md` is the user guide for the skill, not a
+  skill output.
 - **Questions and authorization:** ask one unresolved material decision at a
   time. Honor explicit delegation without interpreting silence as approval.
 - **Layers:** retain L1–L12 in outputs and explain `N/A` entries. Check the
@@ -48,6 +52,11 @@ Follow [SECURITY.md](SECURITY.md) for potentially sensitive reports.
   commits, pushes, deploys, or publishes images, and builds an image locally
   only when the approved plan names it. Do not widen these limits or add
   languages beyond Python and TypeScript without an owner decision.
+- **Architecture outputs:** `architecture` writes only `docs/architecture.md`,
+  `docs/architecture-audit.md`, and `docs/adr/`, runs no project commands,
+  takes technology from `docs/stack.md` or manifests, keeps all twelve
+  template sections at every depth, and keeps the headings and table headers
+  that `scaffold` and `orchestration` read.
 - **Orchestration writes:** `orchestration` requires an existing
   `docs/stack.md` and never changes it, runs no agents, package managers, or
   git, writes agent files and the `AGENTS.md` lead block only after an
@@ -57,9 +66,10 @@ Follow [SECURITY.md](SECURITY.md) for potentially sensitive reports.
 - **Cross-skill contracts:** the skills do not link to each other. The block
   of secret-bearing file patterns must stay identical in the `stacks` security
   reference, the `scaffold` execution safety reference, and the
-  `orchestration` safety reference, and every `docs/stack.md` field that
-  `scaffold` or `orchestration` reads or writes must exist in the `stacks`
-  template. Change every side together; the validator checks them.
+  `orchestration` and `architecture` safety references; every `docs/stack.md`
+  field another skill reads or writes must exist in the `stacks` template;
+  and every `docs/architecture.md` field `scaffold` or `orchestration` reads
+  must exist in the `architecture` template. Change every side together; the validator checks them.
 
 A change to a framework default must account for affected runtimes, packaging,
 drivers, migrations, tests and deployment guidance. Avoid static claims about
