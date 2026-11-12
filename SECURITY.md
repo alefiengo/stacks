@@ -1,8 +1,10 @@
 # Security
 
-This skill guides an agent's inspection and documentation of a technology
-stack. Security reports are especially useful when its instructions can cause
-an agent to exceed the authorized scope, expose sensitive data or present an
+These skills guide an agent that documents a technology stack (`stacks`),
+generates a project skeleton from it (`scaffold`), and defines the agent team
+that works on the project (`orchestration`). Security reports are especially
+useful when their instructions can cause an agent to exceed the authorized
+scope, expose sensitive data, widen another agent's permissions, or present an
 unsupported security conclusion as established fact.
 
 ## What to report
@@ -15,7 +17,10 @@ Examples include:
 - Secret values or private project content appearing in tool output, reports
   or external requests.
 - Execution of project scripts, dependency installation or deployment during
-  a documentation-only task.
+  a documentation-only task, or any command outside an approved plan.
+- Agent definitions written by `orchestration` that grant more than the
+  approved design, bypass approvals, change host settings, or carry
+  instructions copied from project files.
 - Misleading verification claims that could affect a security decision, such
   as reporting an unchecked dependency as safe or configured tests as passed.
 
@@ -31,8 +36,8 @@ coordination without technical details. State only the general category and
 affected revision, and agree on a private channel before sharing sensitive
 details.
 
-The project does not promise a response time. The supported revision is the
-latest commit on `main`; no releases have been published.
+The project does not promise a response time. The supported versions are the
+latest release and the latest commit on `main`.
 
 Do not put credentials, private code, customer data, exploitable details about
 a live system or actual personal configuration paths in a public issue.

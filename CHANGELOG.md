@@ -9,6 +9,17 @@ version.
 
 ### Added
 
+- `orchestration` skill: designs the agent team for an approved
+  `docs/stack.md` (a lead and the fewest justified subagents, with missions,
+  write scopes, capability classes, model tiers, handoffs, and the
+  orchestration flow) in `docs/agents.md`. After the user approves an
+  explicit plan, it writes Claude Code role files (`.claude/agents/`), Codex
+  custom agents (`.codex/agents/`), and a marked lead block in `AGENTS.md`,
+  recording which restrictions each host enforces and which are advisory. It
+  never runs agents, package managers, or git, and never writes host
+  settings or `docs/stack.md`. Install it with
+  `npx skills add alefiengo/stacks --skill orchestration`. Acceptance
+  scenarios OR01-OR35 cover it.
 - `scaffold` skill, version 1: executes an approved plan derived from
   `docs/stack.md` to generate a Python or TypeScript project skeleton with
   lint, type checking, tests, a Dockerfile and Compose when decided, and a CI
@@ -21,7 +32,8 @@ version.
   (git in a parent repository, formatters rewriting `docs/stack.md`, unclear
   `TBD — verify` handling) were fixed and rerun.
 - Validator checks across every `skills/*/` package, including the shared
-  secret-bearing file block and the `docs/stack.md` fields `scaffold` reads.
+  secret-bearing file block in all three skills and the `docs/stack.md`
+  fields that `scaffold` and `orchestration` read.
 - Agent-specific installation instructions, with a manual file-copy route and
   an optional Skills CLI installer.
 - Agent-independent capability guidance and portability acceptance scenarios.
@@ -39,6 +51,10 @@ version.
 
 ### Changed
 
+- `scaffold` also checksums the root agent instruction files (`AGENTS.md`,
+  `CLAUDE.md`) in preflight and keeps them byte-identical, so a generator
+  cannot overwrite an `orchestration` lead block (scenario SC27). `stacks`
+  and `scaffold` descriptions exclude agent-team design.
 - Reorganized the README around the two-skill flow, with a diagram, a
   combined install command, and an example; added user guides for `stacks`
   and `scaffold`; merged the `scaffold` design record into the architecture

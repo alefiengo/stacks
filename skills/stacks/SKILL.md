@@ -10,8 +10,9 @@ description: >
   microservices, and worker and batch jobs. Curated defaults cover Python,
   TypeScript/Node, Java, Go, and .NET. Produces docs/stack.md or
   docs/stack-audit.md. Do not activate solely for implementation,
-  scaffolding, or debugging. Do not activate to review an agent skill's or
-  prompt package's own instructions or behavior.
+  scaffolding, debugging, or designing the coding-agent team that works on
+  the project. Do not activate to
+  review an agent skill's or prompt package's own instructions or behavior.
 ---
 
 # Stacks
