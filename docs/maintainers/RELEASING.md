@@ -1,7 +1,7 @@
 # Release process
 
 A release publishes an identified revision of the repository's skills
-(`stacks` and `scaffold`) and their resources.
+(`stacks`, `scaffold`, and `orchestration`) and their resources.
 Preparing a release does not authorize pushing, tagging, or publishing it.
 Proceed with those external actions only within the owner's stated scope.
 
@@ -11,7 +11,9 @@ Proceed with those external actions only within the owner's stated scope.
    compatibility changes, and migrations without claiming a release that has
    not occurred.
 2. Confirm that each skill's SKILL.md ([stacks](../../skills/stacks/SKILL.md),
-   [scaffold](../../skills/scaffold/SKILL.md)), references, and templates agree,
+   [scaffold](../../skills/scaffold/SKILL.md),
+   [orchestration](../../skills/orchestration/SKILL.md)), references, and
+   templates agree,
    and that the contracts shared between the skills still match.
    Review the [acceptance scenarios](../../validation/README.md) affected by
    the change. Choose document review or targeted agent exercises in proportion
@@ -41,16 +43,19 @@ Proceed with those external actions only within the owner's stated scope.
 ## Package and installation guidance
 
 Confirm the public owner/repository and skill names before distributing the
-installation commands (`--skill stacks` and `--skill scaffold`). The documented source is `alefiengo/stacks`; forks must
+installation commands (`--skill stacks`, `--skill scaffold`, and
+`--skill orchestration`). The documented source is `alefiengo/stacks`; forks must
 update the source identifier before distributing their installation command.
 
 Keep the shared [installation guide](../INSTALLATION.md) consistent with the
 distributable resources and the agent's own skill-loading procedure. The same
 skill packages are used across agents; installation instructions may differ by
 host. Check that `skills/stacks/` includes the entry point, every routed reference,
-both templates, and the license, and that `skills/scaffold/` includes the entry
-point, every routed reference, the report template, and the license. Neither
-may contain maintainer files or links into the other package.
+both templates, and the license, that `skills/scaffold/` includes the entry
+point, every routed reference, the report template, and the license, and that
+`skills/orchestration/` includes the entry point, every routed reference
+including `references/hosts/`, both templates, and the license. None may
+contain maintainer files or links into another package.
 
 For packaging changes, check the installation of each skill in a disposable
 project and exercise define and audit requests for `stacks`. Record the
@@ -61,7 +66,9 @@ review.
 registries. Run them only on a maintainer machine, in `validation/.trial-*`
 fixtures, never in CI, and record them separately from static checks. Do not
 advertise `scaffold` as trialed in an agent until such a trial has been
-observed.
+observed. `orchestration` trials write agent files in the same fixtures;
+re-verify its host references against the official documentation before a
+release and update their check dates.
 
 Review relevant plain-text questions, supplied-evidence audits, no-write delivery
 and unavailable-retrieval scenarios against the

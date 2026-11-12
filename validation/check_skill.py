@@ -18,6 +18,15 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = 'skills'
 # The exact set of published packages; an extra or missing directory fails.
 PACKAGE_RESOURCES = {
+    'orchestration': (
+        'references/input-contract.md',
+        'references/design.md',
+        'references/safety.md',
+        'references/hosts/claude-code.md',
+        'references/hosts/codex.md',
+        'templates/agents.md',
+        'templates/materialization-report.md',
+    ),
     'scaffold': (
         'references/input-contract.md',
         'references/execution-safety.md',
@@ -46,8 +55,10 @@ PACKAGE_RESOURCES = {
 PACKAGES = tuple(sorted(PACKAGE_RESOURCES))
 STACKS = f'{SKILLS_DIR}/stacks'
 SCAFFOLD = f'{SKILLS_DIR}/scaffold'
+ORCHESTRATION = f'{SKILLS_DIR}/orchestration'
 STACKS_SKILL = f'{STACKS}/SKILL.md'
 SCAFFOLD_SKILL = f'{SCAFFOLD}/SKILL.md'
+ORCHESTRATION_SKILL = f'{ORCHESTRATION}/SKILL.md'
 PACKAGE_ENTRIES = ['LICENSE', 'SKILL.md', 'references', 'templates']
 RUNTIME_DIRECTORIES = ('references', 'templates')
 RUNTIME_RESOURCES = tuple(f'{SKILLS_DIR}/{name}/{relative}'
@@ -76,11 +87,14 @@ TEMP_PREFIXES = ('.trial-', '.checker-negative-', '.check-test-')
 MARKDOWN_SUFFIXES = {'.md', '.markdown'}
 MAX_RESOURCE_BYTES = 100_000
 MAX_SKILL_LINES = 250
-# Scenario IDs are contiguous from S01 and SC01; these are the minimum counts that must remain.
+# Scenario IDs are contiguous from S01, SC01, and OR01; these are the minimum counts that must remain.
 MIN_SCENARIOS = 48
 SCENARIOS = [f'S{number:02}' for number in range(1, MIN_SCENARIOS + 1)]
 MIN_SCAFFOLD_SCENARIOS = 13
 SCAFFOLD_SCENARIOS = [f'SC{number:02}' for number in range(1, MIN_SCAFFOLD_SCENARIOS + 1)]
+MIN_ORCHESTRATION_SCENARIOS = 35
+ORCHESTRATION_SCENARIOS = [f'OR{number:02}'
+                           for number in range(1, MIN_ORCHESTRATION_SCENARIOS + 1)]
 PORTABILITY_SCENARIOS = [f'U{number:02}' for number in range(1, 9)]
 LAYERS = [f'L{number}' for number in range(1, 13)]
 LAYER_FILES = (
@@ -89,6 +103,7 @@ LAYER_FILES = (
 )
 STACK_TEMPLATE = f'{STACKS}/templates/stack.md'
 INPUT_CONTRACT = f'{SCAFFOLD}/references/input-contract.md'
+ORCHESTRATION_INPUT_CONTRACT = f'{ORCHESTRATION}/references/input-contract.md'
 # Fields of docs/stack.md that scaffold reads: the stacks template must keep them
 # and the scaffold input contract must name them literally.
 STACK_FIELDS = (
@@ -103,10 +118,30 @@ STACK_FIELDS = (
     '## 9. Version verification log',
     '## 10. Open decisions, assumptions and next steps',
 )
+# Fields of docs/stack.md that orchestration reads, checked the same way.
+ORCHESTRATION_STACK_FIELDS = (
+    '## 1. Project profile',
+    '## 2. Stack summary',
+    '| # | Layer | Decision | Version | Status |',
+    '## 3. Decisions and rationale',
+    '**Authority and implementation state:**',
+    '## 5. Local development',
+    '| Commands |',
+    '| Execution status |',
+    '## 6. CI/CD pipeline',
+    '## 8. Security checklist',
+    '## 10. Open decisions, assumptions and next steps',
+)
+# Each reader of docs/stack.md: (input contract, fields it must name, skill name).
+STACK_READERS = (
+    (INPUT_CONTRACT, STACK_FIELDS, 'scaffold'),
+    (ORCHESTRATION_INPUT_CONTRACT, ORCHESTRATION_STACK_FIELDS, 'orchestration'),
+)
 # Rules duplicated between packages; the text between the markers must be identical.
 SHARED_BLOCKS = {
     'secret-bearing-files': (f'{STACKS}/references/security.md',
-                             f'{SCAFFOLD}/references/execution-safety.md'),
+                             f'{SCAFFOLD}/references/execution-safety.md',
+                             f'{ORCHESTRATION}/references/safety.md'),
 }
 OBSOLETE_WORDING = ('every version below was', 'always include some', 'let me decide',
                     'junit 5', 'fastmcp 2.x', 'postgres:17')
@@ -659,17 +694,21 @@ class Validator:
                            if key.startswith(f'{SKILLS_DIR}/')).casefold()
         for obsolete in OBSOLETE_WORDING:
             self.check(obsolete not in active, f'Known contradictory wording returned: {obsolete}')
-        for name, (first, second) in SHARED_BLOCKS.items():
-            blocks = [self.shared_block(name, first), self.shared_block(name, second)]
-            if None not in blocks:
-                self.check(blocks[0] == blocks[1],
-                           f'Shared block {name} differs between {first} and {second}')
-        template, contract = self.rendered(STACK_TEMPLATE), self.docs.get(INPUT_CONTRACT, '')
-        for field in STACK_FIELDS:
-            self.check(field in template,
-                       f'Field read by scaffold is missing from {STACK_TEMPLATE}: {field}')
-            self.check(field in contract,
-                       f'Field read by scaffold is not named in {INPUT_CONTRACT}: {field}')
+        for name, (first, *others) in SHARED_BLOCKS.items():
+            reference = self.shared_block(name, first)
+            for other in others:
+                block = self.shared_block(name, other)
+                if None not in (reference, block):
+                    self.check(reference == block,
+                               f'Shared block {name} differs between {first} and {other}')
+        template = self.rendered(STACK_TEMPLATE)
+        for contract_path, fields, reader in STACK_READERS:
+            contract = self.docs.get(contract_path, '')
+            for field in fields:
+                self.check(field in template,
+                           f'Field read by {reader} is missing from {STACK_TEMPLATE}: {field}')
+                self.check(field in contract,
+                           f'Field read by {reader} is not named in {contract_path}: {field}')
         scenarios = self.rendered('validation/README.md')
         found = re.findall(r'^\| (S\d+) \|', scenarios, re.M)
         self.check(len(found) >= MIN_SCENARIOS
@@ -680,6 +719,11 @@ class Validator:
                    and found == [f'SC{number:02}' for number in range(1, len(found) + 1)],
                    'Scaffold scenarios must be contiguous from SC01 and include '
                    f'SC01..SC{MIN_SCAFFOLD_SCENARIOS:02}')
+        found = re.findall(r'^\| (OR\d+) \|', scenarios, re.M)
+        self.check(len(found) >= MIN_ORCHESTRATION_SCENARIOS
+                   and found == [f'OR{number:02}' for number in range(1, len(found) + 1)],
+                   'Orchestration scenarios must be contiguous from OR01 and include '
+                   f'OR01..OR{MIN_ORCHESTRATION_SCENARIOS:02}')
         self.check(re.findall(r'^\| (U\d+) \|', scenarios, re.M) == PORTABILITY_SCENARIOS,
                    'Portability scenarios must list U01..U08 exactly once and in order')
 

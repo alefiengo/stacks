@@ -15,7 +15,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from check_skill import (
-    DEPENDABOT, INPUT_CONTRACT, LAYER_FILES, LAYERS, PACKAGES, PORTABILITY_SCENARIOS,
+    DEPENDABOT, INPUT_CONTRACT, LAYER_FILES, LAYERS, ORCHESTRATION, ORCHESTRATION_INPUT_CONTRACT,
+    ORCHESTRATION_SCENARIOS, ORCHESTRATION_SKILL, ORCHESTRATION_STACK_FIELDS, PACKAGES,
+    PORTABILITY_SCENARIOS,
     REQUIRED_FILES, ROOT, RUNTIME_RESOURCES, SCAFFOLD, SCAFFOLD_SCENARIOS, SCAFFOLD_SKILL,
     SCENARIOS, SHARED_BLOCKS, SKILLS_DIR, STACK_FIELDS, STACK_TEMPLATE, STACKS, STACKS_SKILL,
     WORKFLOW, Validator, main,
@@ -28,13 +30,16 @@ SYNTHETIC_LICENSE = (
     'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.\n'
 )
 UNPRIVILEGED = getattr(os, 'geteuid', lambda: 0)() != 0
-SHARED_NAME, (SHARED_STACKS, SHARED_SCAFFOLD) = next(iter(SHARED_BLOCKS.items()))
+SHARED_NAME, (SHARED_STACKS, SHARED_SCAFFOLD, SHARED_ORCHESTRATION) = next(iter(SHARED_BLOCKS.items()))
 SHARED_START = f'<!-- shared:{SHARED_NAME}:start -->'
 SHARED_END = f'<!-- shared:{SHARED_NAME}:end -->'
 SHARED_TEXT = f'{SHARED_START}\n- Synthetic shared rule.\n{SHARED_END}\n'
 SCAFFOLD_TEMPLATE = f'{SCAFFOLD}/templates/scaffold-report.md'
 SCAFFOLD_SCENARIO_MESSAGE = ('Scaffold scenarios must be contiguous from SC01 and include '
                              f'SC01..{SCAFFOLD_SCENARIOS[-1]}')
+ORCHESTRATION_SCENARIO_MESSAGE = ('Orchestration scenarios must be contiguous from OR01 and include '
+                                  f'OR01..{ORCHESTRATION_SCENARIOS[-1]}')
+ORCHESTRATION_TEMPLATE = f'{ORCHESTRATION}/templates/agents.md'
 
 
 def synthetic_skill(name):
@@ -62,20 +67,25 @@ def synthetic_text(relative):
     if relative == 'validation/README.md':
         rows = '\n'.join(f'| {identifier} | Synthetic |' for identifier in SCENARIOS)
         scaffold = '\n'.join(f'| {identifier} | Synthetic |' for identifier in SCAFFOLD_SCENARIOS)
+        orchestration = '\n'.join(f'| {identifier} | Synthetic |'
+                                   for identifier in ORCHESTRATION_SCENARIOS)
         hosts = '\n'.join(f'| {identifier} | Synthetic |' for identifier in PORTABILITY_SCENARIOS)
         return (f'# Validation\n\n| ID | Scenario |\n| --- | --- |\n{rows}\n\n'
                 f'## Scaffold\n\n| ID | Scenario |\n| --- | --- |\n{scaffold}\n\n'
+                f'## Orchestration\n\n| ID | Scenario |\n| --- | --- |\n{orchestration}\n\n'
                 f'## Portability\n\n| ID | Host |\n| --- | --- |\n{hosts}\n')
     template = len(parts) > 3 and parts[0] == SKILLS_DIR and parts[2] == 'templates'
     placeholder = '\nProject: {{project_name}}.\n' if template else ''
     if relative in LAYER_FILES:
         rows = '\n'.join(f'| {layer} | Synthetic |' for layer in LAYERS)
-        fields = '\n\n'.join(STACK_FIELDS) + '\n' if relative == STACK_TEMPLATE else ''
+        stack_fields = dict.fromkeys(STACK_FIELDS + ORCHESTRATION_STACK_FIELDS)
+        fields = '\n\n'.join(stack_fields) + '\n' if relative == STACK_TEMPLATE else ''
         return f'# Layers\n\n| Layer | Choice |\n| --- | --- |\n{rows}\n{placeholder}\n{fields}'
-    if relative == INPUT_CONTRACT:
-        fields = '\n'.join(f'- `{field}`' for field in STACK_FIELDS)
+    if relative in (INPUT_CONTRACT, ORCHESTRATION_INPUT_CONTRACT):
+        names = STACK_FIELDS if relative == INPUT_CONTRACT else ORCHESTRATION_STACK_FIELDS
+        fields = '\n'.join(f'- `{field}`' for field in names)
         return f'# Input contract\n\n{fields}\n'
-    if relative in (SHARED_STACKS, SHARED_SCAFFOLD):
+    if relative in (SHARED_STACKS, SHARED_SCAFFOLD, SHARED_ORCHESTRATION):
         return f'# {Path(relative).stem}\n\n{SHARED_TEXT}'
     if relative.endswith('.md'):
         return f'# {Path(relative).stem}\n\nSynthetic fixture text.\n{placeholder}'
@@ -612,7 +622,7 @@ class ValidatorTests(FixtureTestCase):
     # Contracts between packages
 
     def test_shared_block_must_appear_exactly_once(self):
-        for relative in (SHARED_STACKS, SHARED_SCAFFOLD):
+        for relative in (SHARED_STACKS, SHARED_SCAFFOLD, SHARED_ORCHESTRATION):
             message = f'Shared block {SHARED_NAME} must appear exactly once: {relative}'
             cases = (
                 (SHARED_START + '\n', ''),
@@ -626,15 +636,19 @@ class ValidatorTests(FixtureTestCase):
                 with self.subTest(relative=relative, new=new):
                     build_fixture(self.root)
                     self.replace(relative, old, new)
-                    self.assert_invalid(message)
+                    errors = self.assert_invalid(message)
+                    self.assertFalse(any('differs' in error for error in errors), errors)
 
     def test_shared_block_must_be_identical(self):
-        message = f'Shared block {SHARED_NAME} differs between {SHARED_STACKS} and {SHARED_SCAFFOLD}'
-        for new in ('- Synthetic shared rules.', '- Synthetic shared rule. ', '- Synthetic shared rule.\n'):
-            with self.subTest(new=new):
-                build_fixture(self.root)
-                self.replace(SHARED_SCAFFOLD, '- Synthetic shared rule.', new)
-                self.assert_invalid(message)
+        for relative in (SHARED_SCAFFOLD, SHARED_ORCHESTRATION):
+            message = f'Shared block {SHARED_NAME} differs between {SHARED_STACKS} and {relative}'
+            for new in ('- Synthetic shared rules.', '- Synthetic shared rule. ',
+                        '- Synthetic shared rule.\n'):
+                with self.subTest(relative=relative, new=new):
+                    build_fixture(self.root)
+                    self.replace(relative, '- Synthetic shared rule.', new)
+                    errors = self.assert_invalid(message)
+                    self.assertEqual(len([error for error in errors if 'differs' in error]), 1, errors)
 
     def test_text_outside_shared_block_may_differ(self):
         self.append(SHARED_SCAFFOLD, '\nScaffold-only guidance.\n')
@@ -652,6 +666,78 @@ class ValidatorTests(FixtureTestCase):
         field = STACK_FIELDS[-1]
         self.replace(INPUT_CONTRACT, field, 'Open decisions')
         self.assert_invalid(f'Field read by scaffold is not named in {INPUT_CONTRACT}: {field}')
+
+    def test_stack_template_keeps_fields_read_by_orchestration(self):
+        field = '## 8. Security checklist'
+        self.assertNotIn(field, STACK_FIELDS)
+        self.replace(STACK_TEMPLATE, field, '## 8. Controls')
+        self.assert_invalid(f'Field read by orchestration is missing from {STACK_TEMPLATE}: {field}')
+
+    def test_input_contract_names_fields_read_by_orchestration(self):
+        field = ORCHESTRATION_STACK_FIELDS[0]
+        self.replace(ORCHESTRATION_INPUT_CONTRACT, field, 'Project profile')
+        self.assert_invalid(
+            f'Field read by orchestration is not named in {ORCHESTRATION_INPUT_CONTRACT}: {field}')
+
+    def test_orchestration_scenarios_are_contiguous(self):
+        last = ORCHESTRATION_SCENARIOS[-1]
+        cases = (
+            (f'| {last} |', '| Removed |'),
+            (f'| {last} | Synthetic |',
+             f'| {last} | Synthetic |\n| OR{len(ORCHESTRATION_SCENARIOS) + 2:02} | Gap |'),
+            (f'| {last} | Synthetic |',
+             f'| {last} | Synthetic |\n| {ORCHESTRATION_SCENARIOS[0]} | Duplicate |'),
+        )
+        for old, new in cases:
+            with self.subTest(new=new):
+                build_fixture(self.root)
+                self.replace('validation/README.md', old, new)
+                errors = self.assert_invalid(ORCHESTRATION_SCENARIO_MESSAGE)
+                self.assertFalse(any('Scaffold scenarios' in error for error in errors), errors)
+
+    def test_appended_orchestration_scenario_passes(self):
+        self.append('validation/README.md',
+                    f'\n| OR{len(ORCHESTRATION_SCENARIOS) + 1:02} | Appended |\n')
+        self.assert_valid()
+
+    def test_contract_constants_are_pinned(self):
+        self.assertEqual(ORCHESTRATION_STACK_FIELDS, (
+            '## 1. Project profile',
+            '## 2. Stack summary',
+            '| # | Layer | Decision | Version | Status |',
+            '## 3. Decisions and rationale',
+            '**Authority and implementation state:**',
+            '## 5. Local development',
+            '| Commands |',
+            '| Execution status |',
+            '## 6. CI/CD pipeline',
+            '## 8. Security checklist',
+            '## 10. Open decisions, assumptions and next steps',
+        ))
+        self.assertEqual(ORCHESTRATION_SCENARIOS, [f'OR{number:02}' for number in range(1, 36)])
+        self.assertEqual(
+            sorted(relative for relative in RUNTIME_RESOURCES if relative.startswith(f'{ORCHESTRATION}/')),
+            sorted(f'{ORCHESTRATION}/{relative}' for relative in (
+                'references/input-contract.md', 'references/design.md', 'references/safety.md',
+                'references/hosts/claude-code.md', 'references/hosts/codex.md',
+                'templates/agents.md', 'templates/materialization-report.md')))
+
+    def test_orchestration_scenario_ids_need_two_digits(self):
+        self.append('validation/README.md', '\n| OR100 | Three digits |\n')
+        self.assert_invalid(ORCHESTRATION_SCENARIO_MESSAGE)
+
+    def test_missing_orchestration_resource_fails(self):
+        relative = f'{ORCHESTRATION}/references/hosts/codex.md'
+        (self.root / relative).unlink()
+        self.assert_invalid(f'Missing or unsafe resource: {relative}')
+
+    def test_orchestration_frontmatter_and_templates_are_validated(self):
+        self.replace(ORCHESTRATION_SKILL, 'name: orchestration', 'name: agents')
+        self.assert_invalid(f'Skill name must equal its directory name: {ORCHESTRATION_SKILL}')
+        build_fixture(self.root)
+        self.append(ORCHESTRATION_TEMPLATE, '\n{{Role Name}}\n')
+        self.assert_invalid(
+            f'Template placeholders must be descriptive snake_case: {ORCHESTRATION_TEMPLATE}')
 
     def test_scaffold_scenarios_are_contiguous(self):
         cases = (
@@ -779,7 +865,8 @@ class ValidatorTests(FixtureTestCase):
         status, stdout, stderr = self.run_main(self.root)
         self.assertEqual((status, stderr), (0, ''))
         size = len('Synthetic skill description for validator tests.')
-        self.assertRegex(stdout, rf'\AFrontmatter: scaffold, MIT, description {size} characters\n'
+        self.assertRegex(stdout, rf'\AFrontmatter: orchestration, MIT, description {size} characters\n'
+                                 rf'Frontmatter: scaffold, MIT, description {size} characters\n'
                                  rf'Frontmatter: stacks, MIT, description {size} characters\n'
                                  r'PASS: \d+ static checks across \d+ Markdown files\n'
                                  r'No network, package installation, project execution, '

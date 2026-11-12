@@ -37,9 +37,10 @@ configuration define them, and not a tool's global defaults:
 5. The build or package step, when the stack has one.
 6. The local container image build, only when L8 decided an image and the
    approved plan names the build.
-7. Protected paths: `docs/stack.md` and the agent skill and agent
-   configuration directories inside the root are byte-identical to their
-   Phase 0 checksums. `docs/stack.md` changes only in Phase 5 — Record, which
+7. Protected paths: `docs/stack.md`, the agent skill and agent
+   configuration directories inside the root, and the root agent instruction
+   files (`AGENTS.md`, `CLAUDE.md`) are byte-identical to their Phase 0
+   checksums. `docs/stack.md` changes only in Phase 5 — Record, which
    confirms by comparison with the Phase 0 content that only the fields the
    [input contract](input-contract.md#fields-that-scaffold-writes) allows
    changed. A difference is `failed` and must be reported; restore nothing

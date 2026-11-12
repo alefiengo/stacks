@@ -11,7 +11,8 @@ description: >
   that the project builds and its tests pass. Version 1 covers Python and
   TypeScript/Node. Never commits, pushes, publishes images, creates cloud
   resources, or deploys. Do not activate to choose or compare technologies
-  (use stacks), to implement features, to debug, or to deploy.
+  (use stacks), to design agents (use orchestration), to implement features,
+  to debug, or to deploy.
 ---
 
 # Scaffold
@@ -90,8 +91,9 @@ host could not do.
    [preflight command limits](references/execution-safety.md#command-limits):
    versions come from direct HTTPS requests to registry JSON endpoints, and no
    JavaScript package manager or Corepack runs before approval.
-6. Record checksums of `docs/stack.md` and of agent skill and agent
-   configuration directories inside the root in the conversation, not in a
+6. Record checksums of `docs/stack.md`, of agent skill and agent
+   configuration directories inside the root, and of the root agent
+   instruction files (`AGENTS.md`, `CLAUDE.md`) in the conversation, not in a
    file. Never read such directories outside the root.
 
 ### Phase 1 — Plan checkpoint

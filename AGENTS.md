@@ -2,12 +2,16 @@
 
 ## Purpose and scope
 
-This repository contains two agent skills and their maintainer tooling.
+This repository contains three agent skills and their maintainer tooling.
 `stacks` defines and audits technology stacks and produces documentation only.
 `scaffold` executes an approved plan derived from `docs/stack.md` and generates
-a project skeleton. Read the [stacks SKILL.md](skills/stacks/SKILL.md) and the
-[scaffold SKILL.md](skills/scaffold/SKILL.md) as the artifacts being maintained.
-Each skill's output contract governs use of that installed skill, and neither
+a project skeleton. `orchestration` designs the agent team for that stack in
+`docs/agents.md` and writes approved agent files. Read the
+[stacks SKILL.md](skills/stacks/SKILL.md), the
+[scaffold SKILL.md](skills/scaffold/SKILL.md), and the
+[orchestration SKILL.md](skills/orchestration/SKILL.md) as the artifacts being
+maintained.
+Each skill's output contract governs use of that installed skill, and none
 prevents an explicitly requested change to this repository.
 
 Work within the authorized repository and user-provided context. Do not use
@@ -36,9 +40,19 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
   - [templates/](skills/scaffold/templates/scaffold-report.md): the report
     returned to the user.
   - `LICENSE`: byte-identical copy of the root license.
+- [skills/orchestration/](skills/orchestration/SKILL.md): the installable
+  agent-team skill, self-contained like the others.
+  - [SKILL.md](skills/orchestration/SKILL.md): activation, contract, modes,
+    resource routing.
+  - [references/](skills/orchestration/references/design.md): input
+    contract, team design, safety, and one guide per host under `hosts/`.
+  - [templates/](skills/orchestration/templates/agents.md): `docs/agents.md`
+    and the materialization report.
+  - `LICENSE`: byte-identical copy of the root license.
 - [validation/](validation/README.md): offline checks and acceptance scenarios.
-- [docs/](docs/stacks.md): user guides for [stacks](docs/stacks.md) and
-  [scaffold](docs/scaffold.md), and [installation](docs/INSTALLATION.md).
+- [docs/](docs/stacks.md): user guides for [stacks](docs/stacks.md),
+  [scaffold](docs/scaffold.md), and [orchestration](docs/orchestration.md),
+  and [installation](docs/INSTALLATION.md).
 - [docs/maintainers/](docs/maintainers/ARCHITECTURE.md): design and release process.
 
 ## Editing rules
@@ -53,7 +67,11 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
    explicitly approved plan, never commits, pushes, deploys, or publishes, and
    builds a container image locally only when the approved plan names it.
    Extending it to another language is a decision for the owner after agent
-   trials.
+   trials. Preserve `orchestration`'s contract: it requires an existing
+   `docs/stack.md`, never changes it, never runs agents, package managers, or
+   git, writes host files only after an explicitly approved plan, and never
+   writes host settings or user-level agent directories. Adding a host is a
+   decision for the owner.
 3. Update a rule and its dependent references, templates, and acceptance
    scenarios together. The shared vocabularies are decision status, inventory
    health, finding severity, verification state, and security-control status.
@@ -61,13 +79,14 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
    decision status, inventory health, verification states, and version policy;
    the [audit guide](skills/stacks/references/audit.md) defines finding
    severity; [security guidance](skills/stacks/references/security.md) defines
-   control status. Two contracts span both skills and are checked by the
+   control status. Two contracts span the skills and are checked by the
    validator: the shared block of secret-bearing file patterns, which stays
-   identical in [security guidance](skills/stacks/references/security.md) and in
-   the `scaffold` execution safety reference, and the `docs/stack.md` fields
-   that `scaffold` reads and writes, which must exist in the
+   identical in [security guidance](skills/stacks/references/security.md), the
+   `scaffold` execution safety reference, and the `orchestration` safety
+   reference, and the `docs/stack.md` fields that `scaffold` and
+   `orchestration` read, which must exist in the
    [stack template](skills/stacks/templates/stack.md). The skills do not link
-   to each other; change a shared contract in both places.
+   to each other; change a shared contract in every place.
 4. Maintain English public documentation and skill resources. The installed
    skill honors the user's conversation and document-language preferences.
 5. Use concrete language, descriptive placeholders, valid relative links,
@@ -81,14 +100,20 @@ the task. Never reproduce secrets in reports, examples, or fixtures.
    ceremonial policy to the `stacks` documentation skill.
 8. The project uses the [MIT license](LICENSE). Preserve its terms and notices,
    and keep [skills/stacks/LICENSE](skills/stacks/LICENSE) identical to the
-   root file, and likewise [skills/scaffold/LICENSE](skills/scaffold/LICENSE);
+   root file, and likewise [skills/scaffold/LICENSE](skills/scaffold/LICENSE)
+   and [skills/orchestration/LICENSE](skills/orchestration/LICENSE);
    licensing changes require an explicit owner decision.
 9. Keep the runtime agent-independent. Do not require host-specific tool names,
    UI modes, environment variables, install roots, or wrapper files. Maintain
    the [capability fallbacks](skills/stacks/references/compatibility.md) and test changes
    against the portability scenarios as well as the stack workflows. `scaffold`
    without a shell or file writes returns its plan and file contents and states
-   that nothing was executed or saved.
+   that nothing was executed or saved. The one exception is
+   `skills/orchestration/references/hosts/`, which documents host file
+   formats by necessity; each guide names its official source and check date,
+   and the skill re-verifies it in every run. Other `orchestration` files may
+   name host paths to define its write scope and deny-list; file formats,
+   fields, tool names, and syntax stay in `hosts/`.
 
 ## Validation and review
 

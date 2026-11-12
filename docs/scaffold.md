@@ -75,6 +75,8 @@ CI is recorded as defined, never as passing: `scaffold` does not run your CI.
   observability pipelines beyond the decided configuration remain your work.
 - Without a shell or file writes, it returns the plan and file contents in the
   conversation and states that nothing was executed or saved.
+- It does not define the agents that work on the project; use
+  [`orchestration`](orchestration.md) for that once the skeleton exists.
 
 The agent-facing instructions are in
 [skills/scaffold/SKILL.md](../skills/scaffold/SKILL.md).

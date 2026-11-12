@@ -1,16 +1,18 @@
 # Contributing
 
 Changes should make stack decisions clearer, recommendations more coherent,
-audits better supported by evidence, or generated project skeletons more
-faithful to the approved stack. This repository contains two agent skills,
-`stacks` and `scaffold`, and their documentation; contributing does not
-require application dependencies or a running cloud environment.
+audits better supported by evidence, generated project skeletons more
+faithful to the approved stack, or agent teams better fitted to it. This
+repository contains three agent skills, `stacks`, `scaffold`, and
+`orchestration`, and their documentation; contributing does not require
+application dependencies or a running cloud environment.
 
 ## Make a focused change
 
-1. Read the [stacks SKILL.md](skills/stacks/SKILL.md) or the
-   [scaffold SKILL.md](skills/scaffold/SKILL.md) and the resources relevant to
-   your change. Each runtime package lives in its own `skills/<name>/`
+1. Read the [stacks SKILL.md](skills/stacks/SKILL.md), the
+   [scaffold SKILL.md](skills/scaffold/SKILL.md), or the
+   [orchestration SKILL.md](skills/orchestration/SKILL.md) and the resources
+   relevant to your change. Each runtime package lives in its own `skills/<name>/`
    directory; repository documentation and tooling stay outside them.
 2. Describe the behavior being improved with a concrete request or project
    situation. Keep unrelated wording and technology changes separate.
@@ -46,11 +48,18 @@ Follow [SECURITY.md](SECURITY.md) for potentially sensitive reports.
   commits, pushes, deploys, or publishes images, and builds an image locally
   only when the approved plan names it. Do not widen these limits or add
   languages beyond Python and TypeScript without an owner decision.
+- **Orchestration writes:** `orchestration` requires an existing
+  `docs/stack.md` and never changes it, runs no agents, package managers, or
+  git, writes agent files and the `AGENTS.md` lead block only after an
+  approved plan, and never writes host settings or user-level agent
+  directories. Host formats live only in `references/hosts/`, with their
+  official source and check date. Do not add a host without an owner decision.
 - **Cross-skill contracts:** the skills do not link to each other. The block
   of secret-bearing file patterns must stay identical in the `stacks` security
-  reference and the `scaffold` execution safety reference, and every
-  `docs/stack.md` field that `scaffold` reads or writes must exist in the
-  `stacks` template. Change both sides together; the validator checks them.
+  reference, the `scaffold` execution safety reference, and the
+  `orchestration` safety reference, and every `docs/stack.md` field that
+  `scaffold` or `orchestration` reads or writes must exist in the `stacks`
+  template. Change every side together; the validator checks them.
 
 A change to a framework default must account for affected runtimes, packaging,
 drivers, migrations, tests and deployment guidance. Avoid static claims about
@@ -83,7 +92,9 @@ described in the validation guide. Record the request, attempted tool access,
 output and limitations. Keep structural checks, document walkthroughs and
 actual agent trials separate in your results. `scaffold` trials run real
 generators and install packages from public registries, so run them only on
-your own machine, in a `validation/.trial-*` fixture, and never in CI. Do not label an unperformed
+your own machine, in a `validation/.trial-*` fixture, and never in CI.
+`orchestration` trials write agent definitions; keep them in the same
+fixtures and check the written files on disk. Do not label an unperformed
 installation or runtime evaluation as tested.
 
 ## Submit a reviewable pull request
