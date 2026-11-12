@@ -5,7 +5,7 @@ All notable changes to this project are recorded here. The format follows
 [Semantic Versioning](https://semver.org/). Unreleased work is not a published
 version.
 
-## Unreleased
+## [0.2.0] - 2026-11-11
 
 ### Added
 
@@ -104,3 +104,4 @@ First public release of `stacks`, `scaffold`, and `orchestration`.
   a private route for vulnerability reports.
 
 [0.1.0]: https://github.com/alefiengo/stacks/releases/tag/v0.1.0
+[0.2.0]: https://github.com/alefiengo/stacks/releases/tag/v0.2.0
