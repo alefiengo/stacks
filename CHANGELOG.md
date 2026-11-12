@@ -5,7 +5,9 @@ All notable changes to this project are recorded here. The format follows
 [Semantic Versioning](https://semver.org/). Unreleased work is not a published
 version.
 
-## Unreleased
+## [0.1.0] - 2026-11-11
+
+First public release of `stacks`, `scaffold`, and `orchestration`.
 
 ### Added
 
@@ -71,3 +73,5 @@ version.
 - Raised the minimum Python version for maintainer tools to 3.11.
 - Described the Skills CLI default symlink mode and the `--copy` option, and
   a private route for vulnerability reports.
+
+[0.1.0]: https://github.com/alefiengo/stacks/releases/tag/v0.1.0
