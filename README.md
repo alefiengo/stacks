@@ -1,12 +1,12 @@
 # stacks
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-![Agent skills: stacks, scaffold and orchestration](https://img.shields.io/badge/agent%20skills-stacks%20%7C%20scaffold%20%7C%20orchestration-informational)
+![Agent skills: stacks, architecture, scaffold and orchestration](https://img.shields.io/badge/agent%20skills-stacks%20%7C%20architecture%20%7C%20scaffold%20%7C%20orchestration-informational)
 ![Format: Markdown skills](https://img.shields.io/badge/format-Markdown%20skills-lightgrey)
 
 Agent skills that take a software project from "which stack should we use?"
-to a verified, working skeleton and the agent team that will build on it,
-with every decision written down.
+to a designed architecture, a verified skeleton, and the agent team that
+will build on it, with every decision written down.
 
 ## Why
 
@@ -15,10 +15,12 @@ to:
 
 - pick tools and versions from memory, which may be outdated or incompatible;
 - leave no record of why a technology was chosen or what was assumed;
+- write code without agreed module boundaries or conventions, so structure
+  drifts with every change;
 - run generators and installers without showing you what will execute;
 - improvise subagents with broad tools and no clear ownership.
 
-This repository provides three skills that split the work into decisions you
+This repository provides four skills that split the work into decisions you
 review and changes you approve.
 
 ## How it works
@@ -26,40 +28,49 @@ review and changes you approve.
 ```mermaid
 flowchart LR
     R["Requirements or<br/>existing repository"] --> S["stacks"]
-    S --> D["docs/stack.md<br/>decisions, rationale,<br/>verified versions"]
-    S --> A["docs/stack-audit.md<br/>findings and actions"]
-    D --> Y{"You review"}
-    Y --> C["scaffold"]
+    S --> D["docs/stack.md<br/>technologies and<br/>verified versions"]
+    D --> A["architecture"]
+    A --> M["docs/architecture.md<br/>modules, rules,<br/>conventions"]
+    M --> C["scaffold"]
+    D --> C
     C --> P{"You approve<br/>the plan"}
     P --> K["Working skeleton<br/>builds, tests pass,<br/>CI defined"]
     D --> O["orchestration"]
     K -.-> O
-    O --> T["docs/agents.md<br/>lead, roles,<br/>scopes, handoffs"]
-    T --> Q{"You approve<br/>the files"}
-    Q --> H["Agent files for<br/>Claude Code and Codex"]
+    M -.-> O
+    O --> Q{"You approve<br/>the files"}
+    Q --> H["docs/agents.md and<br/>agent files for<br/>Claude Code and Codex"]
 ```
 
 | Skill | Use it to | It never |
 |---|---|---|
 | [`stacks`](docs/stacks.md) | Define a stack, audit the current one, or compare options, and document the decisions in `docs/stack.md` or `docs/stack-audit.md` | Runs project commands, installs packages, or writes code |
-| [`scaffold`](docs/scaffold.md) | Turn an approved `docs/stack.md` into a project skeleton: generators, dependencies, lint, tests, CI, and an optional local image build | Chooses technologies, commits, pushes, deploys, or publishes images |
-| [`orchestration`](docs/orchestration.md) | Design the agent team for the stack (a lead and subagents with roles, write scopes, capabilities, and model tiers) in `docs/agents.md`, then write the Claude Code and Codex agent files | Runs the agents, installs packages, commits, or changes host settings |
+| [`architecture`](docs/architecture.md) | Design or audit the inside of the system (modules, boundaries, dependency rules, data ownership, contracts, conventions, code structure) in `docs/architecture.md` or `docs/architecture-audit.md`, at a depth that fits the project | Chooses technologies, runs project commands, or writes code |
+| [`scaffold`](docs/scaffold.md) | Turn an approved `docs/stack.md`, and `docs/architecture.md` when present, into a project skeleton: generators, dependencies, module folders, lint, tests, CI, and an optional local image build | Chooses technologies, commits, pushes, deploys, or publishes images |
+| [`orchestration`](docs/orchestration.md) | Design the agent team for the project (a lead and subagents with roles, write scopes, capabilities, and model tiers) in `docs/agents.md`, then write the Claude Code and Codex agent files | Runs the agents, installs packages, commits, or changes host settings |
 
-Each skill is installed and used on its own. `scaffold` and `orchestration`
-need a `docs/stack.md`; without one, they offer to run `stacks` first.
+The diagram is the suggested path, not a requirement. Each skill is
+installed and used on its own, and `architecture` also documents or audits
+an existing codebase. `scaffold` and `orchestration` need a `docs/stack.md`
+and offer to run `stacks` first without one; they use `docs/architecture.md`
+when it exists.
 
 ## Quick start
 
-From your application project, install the three skills:
+From your application project, install the four skills:
 
 ```bash
-npx skills add alefiengo/stacks --skill stacks scaffold orchestration
+npx skills add alefiengo/stacks --skill stacks architecture scaffold orchestration
 ```
 
 Then ask your agent:
 
 ```text
 Use stacks to define a Python REST API stack with PostgreSQL.
+```
+
+```text
+Use architecture to design the modules and conventions for this project.
 ```
 
 ```text
@@ -77,7 +88,9 @@ Use stacks to audit this repository's technology stack.
 `stacks` asks one open decision at a time; add `Choose sensible defaults and
 complete the document autonomously` to delegate the choices. `scaffold`
 always shows its full plan (commands, files, packages, network access) and
-runs nothing until you approve it. `orchestration` shows every agent file it
+runs nothing until you approve it. `architecture` asks one design question at
+a time with two checkpoints, or audits existing code without stopping when
+you delegate it. `orchestration` shows every agent file it
 will write, and which restrictions each host enforces, before writing any.
 
 The [installation guide](docs/INSTALLATION.md) covers single-skill installs,
@@ -122,6 +135,9 @@ resolves `TBD — verify` versions from official registries, and stops at
   background workers or batch jobs.
 - **Curated defaults in `stacks`:** Python, TypeScript/Node, Java, Go, and
   .NET; other languages use the general criteria.
+- **`architecture` depth:** `compact` for a small service, `standard` for a
+  modular product, `extended` with bounded contexts, C4-style diagrams, and
+  decision records for enterprise systems.
 - **`scaffold` version 1:** Python and TypeScript/Node.
 - **`orchestration` hosts:** Claude Code and Codex agent files; the team
   design itself is host-neutral.
@@ -133,8 +149,9 @@ resolves `TBD — verify` versions from official registries, and stops at
 The skills follow the Agent Skills format and install into Claude Code, Codex,
 Antigravity, OpenCode, pi, and other agents that load Markdown skills.
 Behavioral trials so far used Claude models; other agents have not been
-trialed yet. `orchestration` trials checked the written agent files on disk;
-no trial has yet run a generated team on real work. Changes are tracked in
+trialed yet. `architecture` and `orchestration` trials checked the written
+documents and agent files on disk; no trial has yet run a generated team on
+real work. Changes are tracked in
 the [changelog](CHANGELOG.md).
 
 ## Documentation
@@ -142,15 +159,17 @@ the [changelog](CHANGELOG.md).
 | For | Read |
 |---|---|
 | Using `stacks` | [stacks guide](docs/stacks.md) |
+| Using `architecture` | [architecture guide](docs/architecture.md) |
 | Using `scaffold` | [scaffold guide](docs/scaffold.md) |
 | Using `orchestration` | [orchestration guide](docs/orchestration.md) |
 | Installing | [installation guide](docs/INSTALLATION.md) |
-| How the skills are built | [architecture](docs/maintainers/ARCHITECTURE.md) |
+| How the skills are built | [maintainer architecture notes](docs/maintainers/ARCHITECTURE.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) and [validation](validation/README.md) |
 | Reporting a vulnerability | [SECURITY.md](SECURITY.md) |
 
 The agent-facing instructions live in
 [skills/stacks/SKILL.md](skills/stacks/SKILL.md),
+[skills/architecture/SKILL.md](skills/architecture/SKILL.md),
 [skills/scaffold/SKILL.md](skills/scaffold/SKILL.md), and
 [skills/orchestration/SKILL.md](skills/orchestration/SKILL.md).
 

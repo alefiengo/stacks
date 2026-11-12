@@ -11,7 +11,8 @@ description: >
   that the project builds and its tests pass. Version 1 covers Python and
   TypeScript/Node. Never commits, pushes, publishes images, creates cloud
   resources, or deploys. Do not activate to choose or compare technologies
-  (use stacks), to design agents (use orchestration), to implement features,
+  (use stacks), to design module architecture (use architecture), to design
+  agents (use orchestration), to implement features,
   to debug, or to deploy.
 ---
 
@@ -77,7 +78,10 @@ host could not do.
 
 1. Confirm the target project root with the user when it is not explicit.
 2. Read `docs/stack.md` with the [input contract](references/input-contract.md).
-   Identify each component, its language, and every layer's status.
+   Identify each component, its language, and every layer's status. Read
+   `docs/architecture.md` too when it exists, for the module paths the
+   [input contract](references/input-contract.md#optional-architecture-input)
+   describes.
 3. Load the language reference for each component. Version 1 has
    [Python](references/stacks/python.md) and
    [TypeScript/Node](references/stacks/typescript.md). For another language,
@@ -91,7 +95,8 @@ host could not do.
    [preflight command limits](references/execution-safety.md#command-limits):
    versions come from direct HTTPS requests to registry JSON endpoints, and no
    JavaScript package manager or Corepack runs before approval.
-6. Record checksums of `docs/stack.md`, of agent skill and agent
+6. Record checksums of `docs/stack.md`, of `docs/architecture.md` when
+   present, of agent skill and agent
    configuration directories inside the root, and of the root agent
    instruction files (`AGENTS.md`, `CLAUDE.md`) in the conversation, not in a
    file. Never read such directories outside the root.
@@ -112,6 +117,8 @@ Present the plan and wait for explicit approval:
 - the local container build, when L8 decided an image;
 - delegated defaults, skipped layers with reasons, and `open` layers that
   block part of the work;
+- module paths from `docs/architecture.md` when present, and questions about
+  layouts that need manifests, build files, or framework registration;
 - what the run will not do: no commit, push, or deployment.
 
 Offer **approve / change the plan / stop**, plus free text. A changed plan is
@@ -139,7 +146,8 @@ with placeholder names only. No application features.
 
 Run the project's own install, lint, type, test, and build commands, and the
 local image build when the plan names it, and confirm that protected paths,
-including `docs/stack.md`, are byte-identical to their Phase 0 checksums,
+including `docs/stack.md` and `docs/architecture.md` when present, are
+byte-identical to their Phase 0 checksums,
 following the
 [verification guide](references/verification.md). On a failure, report the
 command and exit code, fix only within the plan, and open a new checkpoint

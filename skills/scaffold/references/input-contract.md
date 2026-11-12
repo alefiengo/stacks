@@ -76,10 +76,42 @@ best-effort basis. Any layer whose decision, version, or status cannot be read
 unambiguously is treated as `open`. Say which fields were missing and offer
 to run `stacks` to bring the document up to date.
 
+## Optional architecture input
+
+When `docs/architecture.md` exists under the root, read it as evidence with
+the same rules. These headings and rows come from the `architecture`
+template; match them literally:
+
+- `## 10. Code structure`, with the table header
+  `| Component or module | Path | Layout rule |`: the paths to create.
+- `## 5. Modules`, with the table header
+  `| Module | Component | Responsibility | Owned data | Public interface | Depends on | Path | Status |`:
+  which modules belong to which component, and their status.
+- `## 12. Open decisions, assumptions and next steps`: items that block a
+  path.
+
+For each component in the plan, create the module paths of section 10 that
+are plain folders or packages. Module rows are those whose name appears in
+section 5; component rows only confirm where the component lives, and the
+component's own layout comes from L3 and the generator. A path cell that is
+`open` or not concrete is never created. For each module path: the folder, plus only the file the language
+needs to recognize a package (for example `__init__.py` in Python) or, where
+none exists, a `.gitkeep`, and list each one in the plan. A layout that needs
+more than that, such as a workspace package, a build module or project per
+module, or a framework-registered app, is listed in the plan as a question
+with the files it would need; it is never created without that answer.
+Section 10 is the source of truth for paths; names match section 5. A module
+whose status is `open` or `N/A` is not created; one that is
+`default — revisit` is created and listed as a delegated default. A path that conflicts with `docs/stack.md` or with the
+generator's layout is a question for the user. Never write module code, and
+never change `docs/architecture.md`: checksum it in Phase 0 with the other
+protected paths. Without the document, the structure comes from L3 alone.
+
 ## Scope of implementation
 
 - In scope: L1 runtime and package management, L2 framework with the minimum
-  entry point it needs, L3 project structure, L4 lint, format, and type
+  entry point it needs, L3 project structure (and the empty module paths of
+  `docs/architecture.md` when present), L4 lint, format, and type
   checking, L5 a test runner with one passing test, L8 `Dockerfile` and
   Compose when decided, L9 a CI workflow when decided, and libraries from
   section 4 that those layers need.

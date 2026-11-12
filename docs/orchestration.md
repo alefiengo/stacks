@@ -14,6 +14,9 @@ Claude Code and Codex. It never runs the agents.
   Without it, `orchestration` writes nothing and offers to run `stacks` first.
 - A skeleton is optional. When [`scaffold`](scaffold.md) already created one,
   the component paths come from the project tree.
+- A `docs/architecture.md` from [`architecture`](architecture.md) is optional
+  and recommended: module paths become write scopes, and its conventions go
+  into each role's instructions.
 
 ```text
 Use orchestration to design the agent team for this project.

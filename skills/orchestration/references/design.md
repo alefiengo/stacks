@@ -151,8 +151,11 @@ user's account, provider, or plan makes model availability uncertain.
 
 ## Write scopes and parallel work
 
-- Give every editing role a write scope: paths or globs taken from the L3
-  structure and the project tree, disjoint from other editing roles. Shared
+- Give every editing role a write scope: paths or globs taken from section 10
+  of `docs/architecture.md` when it exists, otherwise from the L3 structure
+  and the project tree, disjoint from other editing roles. Modules do not
+  justify roles by themselves: one role usually owns several modules of the
+  same component. Shared
   files, such as a root manifest or lockfile, belong to one role or to the
   lead.
 - Run read-only roles in parallel freely. Run editing roles in parallel only

@@ -1,7 +1,8 @@
 # Release process
 
 A release publishes an identified revision of the repository's skills
-(`stacks`, `scaffold`, and `orchestration`) and their resources.
+(`stacks`, `architecture`, `scaffold`, and `orchestration`) and their
+resources.
 Preparing a release does not authorize pushing, tagging, or publishing it.
 Proceed with those external actions only within the owner's stated scope.
 
@@ -11,6 +12,7 @@ Proceed with those external actions only within the owner's stated scope.
    compatibility changes, and migrations without claiming a release that has
    not occurred.
 2. Confirm that each skill's SKILL.md ([stacks](../../skills/stacks/SKILL.md),
+   [architecture](../../skills/architecture/SKILL.md),
    [scaffold](../../skills/scaffold/SKILL.md),
    [orchestration](../../skills/orchestration/SKILL.md)), references, and
    templates agree,
@@ -43,8 +45,8 @@ Proceed with those external actions only within the owner's stated scope.
 ## Package and installation guidance
 
 Confirm the public owner/repository and skill names before distributing the
-installation commands (`--skill stacks`, `--skill scaffold`, and
-`--skill orchestration`). The documented source is `alefiengo/stacks`; forks must
+installation commands (`--skill stacks`, `--skill architecture`,
+`--skill scaffold`, and `--skill orchestration`). The documented source is `alefiengo/stacks`; forks must
 update the source identifier before distributing their installation command.
 
 Keep the shared [installation guide](../INSTALLATION.md) consistent with the
@@ -54,7 +56,9 @@ host. Check that `skills/stacks/` includes the entry point, every routed referen
 both templates, and the license, that `skills/scaffold/` includes the entry
 point, every routed reference, the report template, and the license, and that
 `skills/orchestration/` includes the entry point, every routed reference
-including `references/hosts/`, both templates, and the license. None may
+including `references/hosts/`, both templates, and the license, and that
+`skills/architecture/` includes the entry point, every routed reference, its
+three templates, and the license. None may
 contain maintainer files or links into another package.
 
 For packaging changes, check the installation of each skill in a disposable

@@ -97,7 +97,10 @@ Decide: architectural pattern (layered vs package-by-feature vs modular
 monolith) and repo layout (src layout for Python; Node workspaces when shared
 tooling or coordinated releases justify them; standard layout and
 package-by-feature for larger Java apps). For microservices: monorepo vs
-repo-per-service plus a shared service template contract.
+repo-per-service plus a shared service template contract. L3 records the
+pattern and layout only; module boundaries, dependency rules, data
+ownership, and conventions belong to a separate architecture design
+(`docs/architecture.md`) and are not decided here.
 
 ### L4 — Code quality
 

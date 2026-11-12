@@ -44,6 +44,28 @@ best-effort rule below.
 Sections 4, 7, and 9 are read only when a role needs a specific package,
 platform, or version; the deployment section never creates a deploying role.
 
+## Optional architecture input
+
+When `docs/architecture.md` exists under the root, read it as evidence. These
+headings and rows come from the `architecture` template; match them
+literally:
+
+- `## 5. Modules`, with the table header
+  `| Module | Component | Responsibility | Owned data | Public interface | Depends on | Path | Status |`:
+  module boundaries become write scopes; a module's responsibility and
+  allowed dependencies go into the instructions of the role that edits it.
+- `## 9. Conventions`: the rules every editing and reviewing role states in
+  its instructions.
+- `## 10. Code structure`, with the table header
+  `| Component or module | Path | Layout rule |`: the concrete paths.
+- `## 12. Open decisions, assumptions and next steps`: open items a role
+  inherits.
+
+A module or convention whose status is `open` is assigned to no write scope
+and is not stated as a rule. Without the document, write scopes come from the L3
+structure and the project tree. Record the checksum of `docs/architecture.md`
+with the other protected files; this skill never changes it.
+
 ## Behavior by status
 
 Decision statuses are defined by `stacks`; do not redefine them. They are

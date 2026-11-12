@@ -91,9 +91,10 @@ an explanation. Load language and cross-cutting references on demand.
 3. **Runtimes:** declarations, lockfile metadata, CI matrices, and image bases.
    Keep declared, resolved, and observed runtime versions separate. A declaration
    does not establish what runs in production.
-4. **Structure (L3):** repository layout, deployable units, module or package
-   boundaries, and workspace configuration, compared with the team and release
-   needs.
+4. **Structure (L3):** repository layout, deployable units, and workspace
+   configuration, compared with the team and release needs. Module boundaries
+   and conventions inside the code are an architecture review, not part of
+   this audit.
 5. **Containers/local environment:** applicable Dockerfiles, privilege policy,
    build stages, image update policy, Compose, and `.dockerignore`. Static sites,
    embedded databases, and constrained platforms may justify alternatives.
